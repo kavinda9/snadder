@@ -7,38 +7,26 @@ import {
   MinusIcon,
   PlusIcon,
 } from "lucide-react";
-import { LobbyCreated } from "../components/LobbyCreated";
 import { JoinLobby } from "../components/JoinLobby";
+import { createLobby, joinLobby } from "../services/lobbyService";
 import "./Lobby.css";
 
 export function Lobby() {
   const navigate = useNavigate();
   const [mode, setMode] = useState("select");
-  const [lobbyCode, setLobbyCode] = useState("");
   const [botCount, setBotCount] = useState(1);
   const [playerCount, setPlayerCount] = useState(2);
   const [showBotSelection, setShowBotSelection] = useState(false);
   const [showPlayerSelection, setShowPlayerSelection] = useState(false);
-
-  const generateLobbyCode = () => {
-    const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let code = "";
-    for (let i = 0; i < 6; i++) {
-      code += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    return code;
-  };
 
   const handlePlayWithComputer = () => {
     setShowBotSelection(true);
   };
 
   const handleStartBotGame = () => {
-    // Save game settings
     localStorage.setItem("gameMode", "bot");
     localStorage.setItem("botCount", botCount.toString());
 
-    // Navigate to game
     navigate("/game", {
       state: {
         mode: "bot",
@@ -51,41 +39,54 @@ export function Lobby() {
     setShowPlayerSelection(true);
   };
 
-  const handleConfirmPlayerCount = () => {
-    const code = generateLobbyCode();
-    setLobbyCode(code);
+  const handleConfirmPlayerCount = async () => {
+    try {
+      const playerName = localStorage.getItem("playerName") || "Player";
 
-    // Save lobby settings
-    localStorage.setItem("gameMode", "multiplayer");
-    localStorage.setItem("lobbyCode", code);
-    localStorage.setItem("maxPlayers", playerCount.toString());
-    localStorage.setItem("isHost", "true");
+      // Create lobby in Supabase
+      const lobby = await createLobby(playerName, playerCount);
 
-    setMode("createLobby");
-    setShowPlayerSelection(false);
+      // Save lobby settings
+      localStorage.setItem("gameMode", "multiplayer");
+      localStorage.setItem("lobbyCode", lobby.code);
+      localStorage.setItem("maxPlayers", playerCount.toString());
+      localStorage.setItem("isHost", "true");
+
+      // Navigate to waiting room
+      navigate(`/lobby/${lobby.code}`);
+    } catch (error) {
+      console.error("Error creating lobby:", error);
+      alert(error.message || "Failed to create lobby. Please try again.");
+    }
   };
 
-  const handleJoinLobby = (code) => {
-    // TODO: Verify lobby exists in backend
-    console.log("Joining lobby with code:", code);
+  const handleJoinLobby = async (code) => {
+    try {
+      const playerName = localStorage.getItem("playerName") || "Player";
 
-    // Save join settings
-    localStorage.setItem("gameMode", "multiplayer");
-    localStorage.setItem("lobbyCode", code);
-    localStorage.setItem("isHost", "false");
+      // Join lobby in Supabase
+      const lobby = await joinLobby(code, playerName);
 
-    // Navigate to lobby waiting room
-    navigate("/game", {
-      state: {
-        mode: "multiplayer",
-        lobbyCode: code,
-      },
-    });
+      console.log("Joined lobby:", lobby);
+
+      // Save join settings
+      localStorage.setItem("gameMode", "multiplayer");
+      localStorage.setItem("lobbyCode", code);
+      localStorage.setItem("isHost", "false");
+
+      // Navigate to waiting room (not game!)
+      navigate(`/lobby/${code}`);
+    } catch (error) {
+      console.error("Error joining lobby:", error);
+      alert(
+        error.message ||
+          "Failed to join lobby. Please check the code and try again."
+      );
+    }
   };
 
   const handleBackToMenu = () => {
     setMode("select");
-    setLobbyCode("");
     setShowBotSelection(false);
     setShowPlayerSelection(false);
   };
@@ -183,19 +184,6 @@ export function Lobby() {
           </div>
         </div>
       </div>
-    );
-  }
-
-  if (mode === "createLobby" && lobbyCode) {
-    return (
-      <LobbyCreated
-        lobbyCode={lobbyCode}
-        maxPlayers={playerCount}
-        onBack={handleBackToMenu}
-        onStartGame={() =>
-          navigate("/game", { state: { mode: "multiplayer", lobbyCode } })
-        }
-      />
     );
   }
 

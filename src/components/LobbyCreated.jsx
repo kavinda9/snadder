@@ -1,5 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { CopyIcon, CheckIcon, UsersIcon } from "lucide-react";
+import {
+  subscribeLobbyChanges,
+  unsubscribeLobby,
+  startGame as startGameService,
+} from "../services/lobbyService";
 
 export function LobbyCreated({
   lobbyCode,
@@ -8,9 +13,38 @@ export function LobbyCreated({
   onStartGame,
 }) {
   const [copied, setCopied] = useState(false);
-  const [players] = useState([
-    { id: 1, name: localStorage.getItem("playerName") || "You" },
+  const [players, setPlayers] = useState([
+    {
+      id: "1",
+      name: localStorage.getItem("playerName") || "You",
+      ready: true,
+      isHost: true,
+    },
   ]);
+  const [lobby, setLobby] = useState(null);
+
+  // Subscribe to real-time lobby updates
+  useEffect(() => {
+    const channel = subscribeLobbyChanges(lobbyCode, (payload) => {
+      if (payload.eventType === "UPDATE" && payload.new) {
+        console.log("Lobby updated:", payload.new);
+        setLobby(payload.new);
+        setPlayers(payload.new.current_players || []);
+
+        // If game started, navigate to game
+        if (payload.new.status === "playing" && onStartGame) {
+          onStartGame();
+        }
+      } else if (payload.eventType === "DELETE") {
+        alert("Lobby was closed by host");
+        onBack();
+      }
+    });
+
+    return () => {
+      unsubscribeLobby(channel);
+    };
+  }, [lobbyCode, onStartGame, onBack]);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(lobbyCode);
@@ -18,10 +52,14 @@ export function LobbyCreated({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleStartGame = () => {
-    console.log("Starting game with lobby code:", lobbyCode);
-    if (onStartGame) {
-      onStartGame();
+  const handleStartGame = async () => {
+    try {
+      console.log("Starting game with lobby code:", lobbyCode);
+      await startGameService(lobbyCode);
+      // Real-time subscription will handle navigation
+    } catch (error) {
+      console.error("Error starting game:", error);
+      alert(error.message || "Failed to start game");
     }
   };
 

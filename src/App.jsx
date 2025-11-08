@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import SignIn from "./pages/SignIn";
 import Game from "./pages/Game";
 import { Lobby } from "./pages/Lobby";
+import { LobbyWaitingRoom } from "./pages/LobbyWaitingRoom";
 import AuthModal from "./components/AuthModal";
 import snadderLogo from "./assets/snadder.svg";
 
@@ -16,11 +17,10 @@ function Home() {
   const [playerName, setPlayerName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [modalKey, setModalKey] = useState(0); // Add key to force reset
+  const [modalKey, setModalKey] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Simulate loading animation
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 1500);
@@ -29,10 +29,7 @@ function Home() {
 
   const handlePlay = () => {
     if (playerName.trim()) {
-      // Save player name to localStorage
       localStorage.setItem("playerName", playerName);
-
-      // Navigate to LOBBY page (not game!)
       navigate("/lobby");
     } else {
       alert("Please enter your name!");
@@ -40,7 +37,7 @@ function Home() {
   };
 
   const handleOpenModal = () => {
-    setModalKey((prev) => prev + 1); // Force modal to reset
+    setModalKey((prev) => prev + 1);
     setIsAuthModalOpen(true);
   };
 
@@ -60,7 +57,6 @@ function Home() {
   return (
     <>
       <div className="home">
-        {/* Top Navigation Bar */}
         <nav className="top-nav">
           <Link to="/store" className="nav-link">
             <button className="nav-btn">Store</button>
@@ -70,7 +66,6 @@ function Home() {
           </button>
         </nav>
 
-        {/* Main Content */}
         <div className="main-content">
           <img src={snadderLogo} alt="Snadder Logo" className="logo fade-in" />
 
@@ -94,7 +89,6 @@ function Home() {
         </div>
       </div>
 
-      {/* Auth Modal - Shows when isAuthModalOpen is true */}
       <AuthModal
         key={modalKey}
         isOpen={isAuthModalOpen}
@@ -124,6 +118,7 @@ function App() {
         <Route path="/signin" element={<SignIn />} />
         <Route path="/store" element={<Store />} />
         <Route path="/lobby" element={<Lobby />} />
+        <Route path="/lobby/:code" element={<LobbyWaitingRoom />} />
         <Route path="/game" element={<Game />} />
       </Routes>
     </BrowserRouter>
