@@ -1,0 +1,271 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Arial", sans-serif;
+  overflow-x: hidden;
+}
+
+/* Loading Screen */
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 6px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  color: white;
+  font-size: 1.5rem;
+  margin-top: 20px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Home Page */
+.home {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #2c3e5060 0%, #0f2027 100%);
+  position: relative;
+}
+
+/* Top Navigation */
+.top-nav {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 20px 40px;
+  display: flex;
+  gap: 20px;
+  z-index: 10;
+}
+
+.nav-link {
+  text-decoration: none;
+}
+
+.nav-btn {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  padding: 10px 25px;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.nav-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Main Content */
+.main-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.logo {
+  width: 500px;
+  height: auto;
+  max-width: 90vw;
+  margin-bottom: 50px;
+  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.3));
+}
+
+/* Fade in animations */
+.fade-in {
+  animation: fadeIn 1s ease-in;
+}
+
+.fade-in-delay {
+  animation: fadeIn 1s ease-in 0.3s both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Play Section */
+.play-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.name-input {
+  width: 100%;
+  padding: 15px 25px;
+  font-size: 1.1rem;
+  border: 3px solid rgba(255, 255, 255, 0.4);
+  border-radius: 30px;
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #333;
+  text-align: center;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.name-input:focus {
+  border-color: white;
+  background-color: white;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+  transform: scale(1.02);
+}
+
+.name-input::placeholder {
+  color: #999;
+}
+
+.play-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #90c7ff60 0%, #63d0ff 100%);
+  color: white;
+  font-size: 1.4rem;
+  font-weight: bold;
+  border: none;
+  padding: 18px 40px;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.play-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 40px rgba(18, 11, 103, 0.6);
+}
+
+.play-btn:active {
+  transform: translateY(-1px);
+}
+
+/* Store Page */
+.store-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.store-page h1 {
+  font-size: 3rem;
+  margin-bottom: 20px;
+}
+
+.store-page p {
+  font-size: 1.5rem;
+  margin-bottom: 30px;
+}
+
+.back-btn {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 2px solid white;
+  padding: 12px 30px;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: white;
+  color: #667eea;
+  transform: translateY(-2px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .logo {
+    width: 350px;
+  }
+
+  .top-nav {
+    padding: 15px 20px;
+    gap: 10px;
+  }
+
+  .nav-btn {
+    padding: 8px 20px;
+    font-size: 0.9rem;
+  }
+
+  .name-input {
+    font-size: 1rem;
+    padding: 12px 20px;
+  }
+
+  .play-btn {
+    font-size: 1.2rem;
+    padding: 15px 35px;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo {
+    width: 250px;
+  }
+
+  .store-page h1 {
+    font-size: 2rem;
+  }
+
+  .store-page p {
+    font-size: 1.2rem;
+  }
+}
