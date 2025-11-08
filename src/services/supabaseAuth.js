@@ -64,7 +64,7 @@ export const signInWithGoogle = async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: `${window.location.origin}/lobby`, // Changed to /lobby
       },
     });
 
@@ -82,7 +82,7 @@ export const signInWithDiscord = async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "discord",
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: `${window.location.origin}/lobby`, // Changed to /lobby
       },
     });
 

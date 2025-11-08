@@ -492,3 +492,69 @@
 .bot-actions .start-button:hover {
   background: #16a34a;
 }
+
+/* Add this to your existing Lobby.css */
+
+/* Back to Home Button */
+.back-to-home-button {
+  position: absolute;
+  top: 2rem;
+  left: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0.75rem;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  z-index: 10;
+}
+
+.back-to-home-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateX(-5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.back-to-home-button .back-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Make lobby-content relative so button positions correctly */
+.lobby-content {
+  position: relative;
+  max-width: 64rem;
+  width: 100%;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .back-to-home-button {
+    top: 1rem;
+    left: 1rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .back-to-home-button .back-icon {
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .back-to-home-button {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .back-to-home-button span {
+    display: none; /* Hide text on very small screens */
+  }
+}

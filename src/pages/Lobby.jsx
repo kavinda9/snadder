@@ -6,6 +6,7 @@ import {
   LogInIcon,
   MinusIcon,
   PlusIcon,
+  ArrowLeftIcon,
 } from "lucide-react";
 import { JoinLobby } from "../components/JoinLobby";
 import { createLobby, joinLobby } from "../services/lobbyService";
@@ -18,6 +19,10 @@ export function Lobby() {
   const [playerCount, setPlayerCount] = useState(2);
   const [showBotSelection, setShowBotSelection] = useState(false);
   const [showPlayerSelection, setShowPlayerSelection] = useState(false);
+
+  const handleBackToHome = () => {
+    navigate("/");
+  };
 
   const handlePlayWithComputer = () => {
     setShowBotSelection(true);
@@ -194,6 +199,12 @@ export function Lobby() {
   return (
     <div className="lobby-container">
       <div className="lobby-content">
+        {/* Back to Home Button */}
+        <button onClick={handleBackToHome} className="back-to-home-button">
+          <ArrowLeftIcon className="back-icon" />
+          <span>Back to Home</span>
+        </button>
+
         <div className="lobby-header">
           <h1 className="lobby-title">Game Lobby</h1>
           <p className="lobby-subtitle">Choose your game mode</p>
