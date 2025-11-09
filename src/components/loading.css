@@ -1,197 +1,231 @@
-/* Loading Container */
+/* loading.css */
+
+/* Fullscreen Dark Gradient */
 .loading-container {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(145deg, #0f0f0f 0%, #1a1a1a 50%, #111111 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
+  overflow: hidden;
+  font-family: "Segoe UI", "Helvetica Neue", sans-serif;
 }
 
+/* Subtle Background Elements (Snake & Ladder Outlines) */
+.bg-patterns {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.08;
+}
+
+.ladder-outline {
+  position: absolute;
+  width: 4px;
+  background: linear-gradient(to top, transparent, #444, transparent);
+  border-left: 1px solid #333;
+  border-right: 1px solid #333;
+  transform: rotate(25deg);
+  opacity: 0.6;
+}
+
+.left-ladder {
+  height: 180px;
+  left: 15%;
+  bottom: 20%;
+  transform: rotate(-30deg);
+}
+
+.right-ladder {
+  height: 160px;
+  right: 18%;
+  bottom: 25%;
+  transform: rotate(28deg);
+}
+
+.snake-outline {
+  position: absolute;
+  width: 120px;
+  height: 80px;
+  left: 50%;
+  bottom: 18%;
+  transform: translateX(-50%);
+  border: 1.5px solid #333;
+  border-radius: 50% 50% 40% 40% / 60% 60% 40% 40%;
+  opacity: 0.5;
+  background: transparent;
+}
+
+/* Ladder Rungs (Subtle) */
+.ladder-outline::before,
+.ladder-outline::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  background: #333;
+  left: 0;
+}
+
+.left-ladder::before {
+  top: 30%;
+}
+.left-ladder::after {
+  top: 65%;
+}
+.right-ladder::before {
+  top: 28%;
+}
+.right-ladder::after {
+  top: 70%;
+}
+
+/* Main Content */
 .loading-content {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2rem;
+  position: relative;
+  z-index: 2;
 }
 
-/* Animated Dice */
-.loading-dice {
-  width: 80px;
-  height: 80px;
-  perspective: 1000px;
+/* Logo */
+.game-logo {
+  width: 120px;
+  height: auto;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.1));
+  animation: logoFloat 3s ease-in-out infinite;
 }
 
-.dice-face {
-  width: 100%;
-  height: 100%;
-  background: white;
-  border-radius: 15px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  padding: 10px;
-  gap: 5px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  animation: rotateDice 2s ease-in-out infinite;
-  transform-style: preserve-3d;
-}
-
-.dot {
-  width: 12px;
-  height: 12px;
-  background: #667eea;
-  border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.dot:nth-child(1) {
-  grid-area: 1 / 1;
-}
-.dot:nth-child(2) {
-  grid-area: 1 / 3;
-}
-.dot:nth-child(3) {
-  grid-area: 2 / 2;
-}
-.dot:nth-child(4) {
-  grid-area: 3 / 1;
-}
-.dot:nth-child(5) {
-  grid-area: 3 / 3;
-}
-.dot:nth-child(6) {
-  display: none;
-}
-
-@keyframes rotateDice {
+@keyframes logoFloat {
   0%,
   100% {
-    transform: rotateX(0deg) rotateY(0deg);
-  }
-  25% {
-    transform: rotateX(180deg) rotateY(0deg);
+    transform: translateY(0);
   }
   50% {
-    transform: rotateX(180deg) rotateY(180deg);
-  }
-  75% {
-    transform: rotateX(0deg) rotateY(180deg);
+    transform: translateY(-8px);
   }
 }
 
-/* Snake Animation */
-.loading-snake {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 1rem;
-}
-
-.snake-body {
-  width: 15px;
-  height: 15px;
-  background: #2ecc71;
-  border-radius: 50%;
-  animation: snakeMove 1.4s ease-in-out infinite;
-  box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
-}
-
-.snake-body:nth-child(1) {
-  animation-delay: 0s;
-  background: #27ae60;
-}
-
-.snake-body:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.snake-body:nth-child(3) {
-  animation-delay: 0.4s;
-}
-
-.snake-body:nth-child(4) {
-  animation-delay: 0.6s;
-}
-
-@keyframes snakeMove {
-  0%,
-  100% {
-    transform: translateY(0) scale(1);
-  }
-  50% {
-    transform: translateY(-20px) scale(1.2);
-  }
-}
-
-/* Loading Text */
+/* Loading Title */
 .loading-title {
-  font-size: 2rem;
-  font-weight: bold;
-  color: white;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #e0e0e0;
   margin: 0;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
 }
 
+/* Animated Dots */
 .loading-dots {
   display: flex;
   gap: 8px;
-  margin-top: -1rem;
+  margin-top: -0.8rem;
 }
 
 .loading-dots span {
-  color: white;
-  font-size: 2rem;
-  animation: dotBounce 1.4s ease-in-out infinite;
+  color: #888;
+  font-size: 1.8rem;
+  font-weight: bold;
+  animation: dotPulse 1.4s ease-in-out infinite;
 }
 
 .loading-dots span:nth-child(1) {
   animation-delay: 0s;
 }
-
 .loading-dots span:nth-child(2) {
   animation-delay: 0.2s;
 }
-
 .loading-dots span:nth-child(3) {
   animation-delay: 0.4s;
 }
 
-@keyframes dotBounce {
+@keyframes dotPulse {
   0%,
   60%,
   100% {
-    transform: translateY(0);
-    opacity: 1;
+    opacity: 0.4;
+    transform: scale(1);
   }
   30% {
-    transform: translateY(-10px);
-    opacity: 0.7;
+    opacity: 1;
+    transform: scale(1.2);
   }
 }
 
-/* Progress Bar */
-.progress-bar {
-  width: 250px;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+/* Progress Bar Container */
+.progress-container {
+  width: 320px;
+  max-width: 90vw;
 }
 
+/* Progress Bar Base */
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #222;
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Progress Fill with Smooth Animation */
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #2ecc71, #27ae60);
-  border-radius: 10px;
-  animation: progressMove 2s ease-in-out infinite;
-  box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+  width: 0%;
+  background: linear-gradient(90deg, #555, #999, #555);
+  border-radius: 3px;
+  animation: fillProgress 2.5s ease-in-out infinite;
+  position: relative;
+  box-shadow: 0 0 10px rgba(150, 150, 150, 0.3);
 }
 
-@keyframes progressMove {
+.progress-fill::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 50%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: shimmer 1.5s linear infinite;
+}
+
+/* Glow Effect */
+.progress-glow {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 30px;
+  height: 30px;
+  background: radial-gradient(
+    circle,
+    rgba(180, 180, 180, 0.4) 0%,
+    transparent 70%
+  );
+  border-radius: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  pointer-events: none;
+  animation: glowPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes fillProgress {
   0% {
     width: 0%;
   }
@@ -203,43 +237,52 @@
   }
 }
 
-/* Mobile Responsive */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+@keyframes glowPulse {
+  0%,
+  100% {
+    left: 0%;
+    opacity: 0;
+  }
+  50% {
+    left: 100%;
+    opacity: 1;
+  }
+}
+
+/* Responsive */
 @media (max-width: 768px) {
+  .game-logo {
+    width: 90px;
+  }
   .loading-title {
     font-size: 1.5rem;
+    letter-spacing: 2px;
   }
-
-  .loading-dice {
-    width: 60px;
-    height: 60px;
-  }
-
-  .dot {
-    width: 10px;
-    height: 10px;
-  }
-
-  .progress-bar {
-    width: 200px;
+  .progress-container {
+    width: 280px;
   }
 }
 
 @media (max-width: 480px) {
+  .game-logo {
+    width: 75px;
+  }
   .loading-title {
-    font-size: 1.25rem;
+    font-size: 1.3rem;
   }
-
-  .loading-dice {
-    width: 50px;
-    height: 50px;
+  .progress-container {
+    width: 240px;
   }
-
-  .snake-body {
-    width: 12px;
-    height: 12px;
-  }
-
-  .progress-bar {
-    width: 150px;
+  .loading-dots span {
+    font-size: 1.5rem;
   }
 }

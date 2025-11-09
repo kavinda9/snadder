@@ -1,29 +1,20 @@
 import React from "react";
 import "./loading.css";
+import logo from "../assets/logo.png"; // Adjust path if needed
 
 function Loading() {
   return (
     <div className="loading-container">
-      <div className="loading-content">
-        {/* Animated Dice */}
-        <div className="loading-dice">
-          <div className="dice-face">
-            <div className="dot"></div>
-            <div className="dot"></div>
-            <div className="dot"></div>
-            <div className="dot"></div>
-            <div className="dot"></div>
-            <div className="dot"></div>
-          </div>
-        </div>
+      {/* Subtle Background Patterns */}
+      <div className="bg-patterns">
+        <div className="ladder-outline left-ladder"></div>
+        <div className="ladder-outline right-ladder"></div>
+        <div className="snake-outline"></div>
+      </div>
 
-        {/* Snake Animation */}
-        <div className="loading-snake">
-          <div className="snake-body"></div>
-          <div className="snake-body"></div>
-          <div className="snake-body"></div>
-          <div className="snake-body"></div>
-        </div>
+      <div className="loading-content">
+        {/* Logo */}
+        <img src={logo} alt="Snadder Logo" className="game-logo" />
 
         {/* Loading Text */}
         <h2 className="loading-title">Loading Game</h2>
@@ -33,9 +24,12 @@ function Loading() {
           <span>.</span>
         </div>
 
-        {/* Progress Bar */}
-        <div className="progress-bar">
-          <div className="progress-fill"></div>
+        {/* Sleek Progress Bar with Glow */}
+        <div className="progress-container">
+          <div className="progress-bar">
+            <div className="progress-fill"></div>
+            <div className="progress-glow"></div>
+          </div>
         </div>
       </div>
     </div>

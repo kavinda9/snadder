@@ -3,8 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { CopyIcon, CheckIcon, UsersIcon, CrownIcon } from "lucide-react";
 import {
   getLobby,
-  subscribeLobbyChanges,
-  unsubscribeLobby,
   startGame,
   leaveLobby,
   togglePlayerReady,
@@ -21,25 +19,65 @@ export function LobbyWaitingRoom() {
   const [copied, setCopied] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
 
+  // Fetch lobby data from database
+  const fetchLobby = async (skipNavigate = false) => {
+    try {
+      console.log("🔄 Fetching fresh lobby data...");
+      const data = await getLobby(code);
+      console.log("✅ Fresh lobby data:", data);
+      setLobby(data);
+
+      // Check if game started (but skip navigation on initial load)
+      if (data.status === "playing" && !skipNavigate) {
+        console.log("🎮 Game has started! Navigating...");
+        navigate("/game", {
+          state: {
+            mode: "multiplayer",
+            lobbyCode: code,
+            lobby: data,
+          },
+        });
+      } else if (data.status === "playing" && skipNavigate) {
+        console.log(
+          "⚠️ Game already started but skipping navigation (initial load)"
+        );
+      }
+    } catch (err) {
+      console.error("❌ Error fetching lobby:", err);
+      if (!lobby) {
+        setError(err.message);
+      }
+    }
+  };
+
+  // Get current user
   useEffect(() => {
+    const getCurrentUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id);
+      console.log("👤 Current user ID:", user?.id);
+    };
     getCurrentUser();
   }, []);
 
+  // Initial load + Realtime subscription
   useEffect(() => {
     let channel;
+    let pollInterval;
 
-    const setupLobby = async () => {
+    const setup = async () => {
       try {
-        setLoading(true);
-        const lobbyData = await getLobby(code);
-        setLobby(lobbyData);
+        // Initial load
+        await fetchLobby();
         setLoading(false);
 
-        console.log("🎮 Setting up real-time subscription for lobby:", code);
+        // Setup realtime subscription
+        console.log("📡 Setting up realtime for lobby:", code);
 
-        // Subscribe to real-time updates
         channel = supabase
-          .channel(`lobby-${code}`)
+          .channel(`public:lobbies:${code}`)
           .on(
             "postgres_changes",
             {
@@ -48,24 +86,14 @@ export function LobbyWaitingRoom() {
               table: "lobbies",
               filter: `code=eq.${code}`,
             },
-            (payload) => {
-              console.log("🔔 Realtime update received:", payload);
+            async (payload) => {
+              console.log("🔔 REALTIME EVENT:", payload.eventType);
+              console.log("📦 Payload:", payload);
 
-              if (payload.eventType === "UPDATE" && payload.new) {
-                console.log("✅ Lobby updated:", payload.new);
-                setLobby(payload.new);
-
-                // If game started, navigate to game
-                if (payload.new.status === "playing") {
-                  console.log("🎮 Game starting, navigating...");
-                  navigate("/game", {
-                    state: {
-                      mode: "multiplayer",
-                      lobbyCode: code,
-                      lobby: payload.new,
-                    },
-                  });
-                }
+              if (payload.eventType === "UPDATE") {
+                console.log("🔄 Lobby updated via realtime");
+                // Fetch fresh data to ensure consistency
+                await fetchLobby();
               } else if (payload.eventType === "DELETE") {
                 console.log("❌ Lobby deleted");
                 alert("Host closed the lobby");
@@ -73,39 +101,40 @@ export function LobbyWaitingRoom() {
               }
             }
           )
-          .subscribe((status) => {
-            console.log("📡 Subscription status:", status);
+          .subscribe(async (status) => {
+            console.log("📡 Realtime status:", status);
+
             if (status === "SUBSCRIBED") {
-              console.log("✅ Successfully subscribed to realtime updates");
+              console.log("✅ Realtime connected!");
             } else if (status === "CHANNEL_ERROR") {
-              console.error("❌ Channel subscription error");
+              console.error("❌ Realtime error - falling back to polling");
+              // Fallback: Poll every 2 seconds if realtime fails
+              pollInterval = setInterval(fetchLobby, 2000);
             } else if (status === "TIMED_OUT") {
-              console.error("⏰ Subscription timed out");
+              console.error("⏰ Realtime timeout - falling back to polling");
+              pollInterval = setInterval(fetchLobby, 2000);
             }
           });
       } catch (err) {
-        console.error("Error loading lobby:", err);
+        console.error("❌ Setup error:", err);
         setError(err.message);
         setLoading(false);
       }
     };
 
-    setupLobby();
+    setup();
 
+    // Cleanup
     return () => {
-      console.log("🔌 Cleaning up subscription");
+      console.log("🧹 Cleaning up...");
       if (channel) {
         supabase.removeChannel(channel);
       }
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
     };
   }, [code, navigate]);
-
-  const getCurrentUser = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    setCurrentUserId(user?.id);
-  };
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(code);
@@ -114,14 +143,22 @@ export function LobbyWaitingRoom() {
   };
 
   const handleToggleReady = async () => {
+    if (!lobby || !currentUserId) return;
+
     try {
       const currentPlayer = lobby.current_players.find(
         (p) => p.id === currentUserId
       );
       const newReadyStatus = !currentPlayer?.ready;
-      console.log("🎯 Toggling ready status to:", newReadyStatus);
+
+      console.log("🎯 Toggling ready to:", newReadyStatus);
+
       await togglePlayerReady(code, currentUserId, newReadyStatus);
-      // State will update via real-time subscription
+
+      // Immediately fetch fresh data
+      await fetchLobby();
+
+      console.log("✅ Ready status updated");
     } catch (err) {
       console.error("❌ Error toggling ready:", err);
       alert(err.message);
@@ -131,8 +168,13 @@ export function LobbyWaitingRoom() {
   const handleStartGame = async () => {
     try {
       console.log("🚀 Starting game...");
+
       await startGame(code);
-      // Real-time subscription will handle navigation
+
+      // Immediately fetch to check status
+      await fetchLobby();
+
+      console.log("✅ Game start initiated");
     } catch (err) {
       console.error("❌ Error starting game:", err);
       alert(err.message);
@@ -145,7 +187,7 @@ export function LobbyWaitingRoom() {
       await leaveLobby(code, currentUserId);
       navigate("/lobby");
     } catch (err) {
-      console.error("❌ Error leaving lobby:", err);
+      console.error("❌ Error leaving:", err);
       alert(err.message);
     }
   };
@@ -172,15 +214,21 @@ export function LobbyWaitingRoom() {
     );
   }
 
-  if (!lobby) return null;
+  if (!lobby) {
+    return (
+      <div className="lobby-waiting-container">
+        <div className="loading">Waiting for lobby data...</div>
+      </div>
+    );
+  }
 
   const isHost = lobby.host_id === currentUserId;
-  const currentPlayer = lobby.current_players.find(
+  const currentPlayer = lobby.current_players?.find(
     (p) => p.id === currentUserId
   );
   const isReady = currentPlayer?.ready || false;
-  const allPlayersReady = lobby.current_players.every((p) => p.ready);
-  const canStart = lobby.current_players.length >= 2 && allPlayersReady;
+  const allPlayersReady = lobby.current_players?.every((p) => p.ready) || false;
+  const canStart = lobby.current_players?.length >= 2 && allPlayersReady;
 
   return (
     <div className="lobby-waiting-container">
@@ -190,7 +238,6 @@ export function LobbyWaitingRoom() {
           {isHost && <span className="host-badge">You're the Host</span>}
         </div>
 
-        {/* Lobby Code Section */}
         <div className="code-section">
           <div className="code-header">
             <span className="code-label">Lobby Code</span>
@@ -213,16 +260,15 @@ export function LobbyWaitingRoom() {
           </div>
         </div>
 
-        {/* Players Section */}
         <div className="players-section">
           <div className="players-header">
             <UsersIcon className="players-icon" />
             <h3>
-              Players ({lobby.current_players.length}/{lobby.max_players})
+              Players ({lobby.current_players?.length || 0}/{lobby.max_players})
             </h3>
           </div>
           <div className="players-list">
-            {lobby.current_players.map((player) => (
+            {lobby.current_players?.map((player) => (
               <div key={player.id} className="player-item">
                 <div
                   className="player-avatar"
@@ -249,9 +295,8 @@ export function LobbyWaitingRoom() {
               </div>
             ))}
 
-            {/* Empty slots */}
             {Array.from({
-              length: lobby.max_players - lobby.current_players.length,
+              length: lobby.max_players - (lobby.current_players?.length || 0),
             }).map((_, i) => (
               <div key={`empty-${i}`} className="empty-slot">
                 <span>Waiting for player...</span>
@@ -260,7 +305,6 @@ export function LobbyWaitingRoom() {
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div className="action-buttons">
           {!isHost && (
             <button
@@ -286,10 +330,9 @@ export function LobbyWaitingRoom() {
           </button>
         </div>
 
-        {/* Status Messages */}
         {isHost && !canStart && (
           <p className="status-message">
-            {lobby.current_players.length < 2
+            {(lobby.current_players?.length || 0) < 2
               ? "Need at least 2 players to start"
               : "Waiting for all players to be ready..."}
           </p>

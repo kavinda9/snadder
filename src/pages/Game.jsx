@@ -2,6 +2,18 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Board from "../components/Board";
 import Dice from "../components/Dice";
+import { supabase } from "../services/supabaseClient";
+import {
+  createGameState,
+  getGameState,
+  initializeGameState,
+  updatePlayerPosition,
+  rollDice,
+  nextTurn,
+  setWinner,
+  resetGame as resetGameState,
+  subscribeToGameState,
+} from "../services/gameService";
 import boardImage from "../assets/board.png";
 // Import sound files
 import jumpSound from "../assets/sounds/jump.mp3";
@@ -26,13 +38,11 @@ const Game = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Audio refs for sound effects
+  // Audio refs
   const jumpAudioRef = useRef(null);
   const snakeAudioRef = useRef(null);
   const ladderAudioRef = useRef(null);
   const winAudioRef = useRef(null);
-
-  // Background music refs
   const musicRefs = useRef([]);
   const currentMusicIndexRef = useRef(0);
 
@@ -43,87 +53,51 @@ const Game = () => {
   const [isSoundMuted, setIsSoundMuted] = useState(false);
   const [isMusicMuted, setIsMusicMuted] = useState(false);
 
-  // Get game settings from localStorage or location state
+  // Get game settings
   const gameMode =
     localStorage.getItem("gameMode") || location.state?.mode || "bot";
   const botCount =
     parseInt(localStorage.getItem("botCount")) || location.state?.botCount || 1;
   const lobbyCode =
     localStorage.getItem("lobbyCode") || location.state?.lobbyCode;
-  const maxPlayers = parseInt(localStorage.getItem("maxPlayers")) || 4;
-  const isHost = localStorage.getItem("isHost") === "true";
-
-  // Get player name from localStorage
+  const lobby = location.state?.lobby;
   const playerName = localStorage.getItem("playerName") || "Guest";
 
-  // Player colors and icons mapping
-  const playerAssets = [
-    { color: "#e74c3c", icon: redIcon, name: "Red" },
-    { color: "#f1c40f", icon: yellowIcon, name: "Yellow" },
-    { color: "#2ecc71", icon: greenIcon, name: "Green" },
-    { color: "#e91e63", icon: pinkIcon, name: "Pink" },
-    { color: "#34495e", icon: blackIcon, name: "Black" },
-    { color: "#9b59b6", icon: purpleIcon, name: "Purple" },
-    { color: "#3498db", icon: blueIcon, name: "Blue" },
+  // Get current user ID
+  const [currentUserId, setCurrentUserId] = useState(null);
+
+  // Player icons mapping
+  const playerIcons = [
+    redIcon,
+    yellowIcon,
+    greenIcon,
+    pinkIcon,
+    blackIcon,
+    purpleIcon,
+    blueIcon,
   ];
 
-  // Initialize players based on game mode
-  const initializePlayers = () => {
-    if (gameMode === "bot") {
-      const playerList = [
-        {
-          id: "p1",
-          name: playerName,
-          position: 0,
-          color: playerAssets[0].color,
-          icon: playerAssets[0].icon,
-          isBot: false,
-        },
-      ];
-
-      // Add bots
-      for (let i = 0; i < botCount; i++) {
-        playerList.push({
-          id: `bot${i + 1}`,
-          name: `Bot ${i + 1}`,
-          position: 0,
-          color: playerAssets[i + 1].color,
-          icon: playerAssets[i + 1].icon,
-          isBot: true,
-        });
-      }
-
-      return playerList;
-    } else {
-      // Multiplayer mode: Real players (for now, placeholder until backend)
-      return [
-        {
-          id: "p1",
-          name: playerName,
-          position: 0,
-          color: playerAssets[0].color,
-          icon: playerAssets[0].icon,
-          isBot: false,
-        },
-        {
-          id: "p2",
-          name: "Waiting...",
-          position: 0,
-          color: playerAssets[1].color,
-          icon: playerAssets[1].icon,
-          isBot: false,
-        },
-      ];
-    }
-  };
-
-  const [players, setPlayers] = useState(initializePlayers());
+  // Game state
+  const [players, setPlayers] = useState([]);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [diceValue, setDiceValue] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
   const [gameStatus, setGameStatus] = useState("playing");
+  const [isAnimating, setIsAnimating] = useState(false); // ✅ Track local animation state
 
   const currentPlayer = players[currentPlayerIndex];
+  const isMyTurn = currentPlayer?.id === currentUserId;
+
+  // ✅ Debug: Log turn information
+  useEffect(() => {
+    if (gameMode === "multiplayer" && currentPlayer) {
+      console.log("🎯 Current Turn Info:");
+      console.log("  - Current Player:", currentPlayer.name, currentPlayer.id);
+      console.log("  - My User ID:", currentUserId);
+      console.log("  - Is My Turn?", isMyTurn);
+      console.log("  - Turn Index:", currentPlayerIndex);
+    }
+  }, [currentPlayer, currentUserId, isMyTurn, currentPlayerIndex, gameMode]);
 
   // Snakes and Ladders
   const SNAKES = {
@@ -136,41 +110,177 @@ const Game = () => {
     40: 3,
     27: 5,
   };
+  const LADDERS = { 4: 25, 13: 46, 42: 63, 50: 69, 62: 81, 74: 92 };
 
-  const LADDERS = {
-    4: 25,
-    13: 46,
-    42: 63,
-    50: 69,
-    62: 81,
-    74: 92,
-  };
-
-  // Get sorted leaderboard (players sorted by position, descending)
-  const getLeaderboard = () => {
-    return [...players].sort((a, b) => b.position - a.position);
-  };
-
-  // Initialize audio objects
+  // Get current user
   useEffect(() => {
-    // Sound effects
+    const getCurrentUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id);
+      console.log("👤 Current user:", user?.id);
+    };
+    getCurrentUser();
+  }, []);
+
+  // Initialize game (BOT or MULTIPLAYER)
+  useEffect(() => {
+    const initializeGame = async () => {
+      if (gameMode === "bot") {
+        // Bot mode - local game
+        const playerList = [
+          {
+            id: "p1",
+            name: playerName,
+            position: 0,
+            color: "#e74c3c",
+            icon: redIcon,
+            isBot: false,
+          },
+        ];
+
+        for (let i = 0; i < botCount; i++) {
+          playerList.push({
+            id: `bot${i + 1}`,
+            name: `Bot ${i + 1}`,
+            position: 0,
+            color: [
+              "#f1c40f",
+              "#2ecc71",
+              "#e91e63",
+              "#34495e",
+              "#9b59b6",
+              "#3498db",
+            ][i],
+            icon: playerIcons[i + 1],
+            isBot: true,
+          });
+        }
+
+        setPlayers(playerList);
+      } else {
+        // Multiplayer mode - sync with Supabase
+        if (!lobbyCode) {
+          console.error("❌ No lobby code for multiplayer game");
+          alert("No lobby code found!");
+          navigate("/lobby");
+          return;
+        }
+
+        try {
+          // Check if lobby data exists
+          if (!lobby) {
+            console.error("❌ No lobby data found!");
+            console.log("Location state:", location.state);
+            alert("No lobby data found! Please start from the lobby.");
+            navigate("/lobby");
+            return;
+          }
+
+          // Validate lobby has players
+          if (!lobby.current_players || lobby.current_players.length === 0) {
+            throw new Error("Lobby has no players!");
+          }
+
+          // ✅ DEBUG: Log lobby players
+          console.log("🎮 Lobby Players:", lobby.current_players);
+          console.log("👤 Current User ID:", currentUserId);
+
+          // ✅ Use initializeGameState instead of separate try/catch
+          console.log("📝 Initializing game state...");
+          const gameState = await initializeGameState(lobbyCode, lobby);
+
+          console.log("✅ Game State Retrieved:", gameState);
+          console.log(
+            "🎲 Current Turn Player ID:",
+            gameState.current_turn_player_id
+          );
+          console.log("🎲 Current Turn Index:", gameState.current_turn_index);
+
+          // Map players with icons
+          const mappedPlayers = gameState.players.map((p, index) => ({
+            ...p,
+            icon: playerIcons[index],
+          }));
+
+          console.log("👥 Mapped Players:", mappedPlayers);
+
+          setPlayers(mappedPlayers);
+          setCurrentPlayerIndex(gameState.current_turn_index);
+          setDiceValue(gameState.dice_value);
+          setIsRolling(gameState.is_rolling);
+          setGameStatus(gameState.game_status);
+        } catch (error) {
+          console.error("❌ Error initializing multiplayer game:", error);
+          console.error("Error details:", error.message);
+          alert(`Failed to initialize game: ${error.message}`);
+          navigate("/lobby");
+        }
+      }
+    };
+
+    initializeGame();
+  }, [gameMode, lobbyCode, botCount]);
+
+  // ✅ FIXED: Subscribe to multiplayer game updates (NO ANIMATION LOGIC)
+  useEffect(() => {
+    if (gameMode !== "multiplayer" || !lobbyCode) return;
+
+    let channel;
+
+    const setupSubscription = () => {
+      channel = subscribeToGameState(lobbyCode, (payload) => {
+        if (payload.eventType === "UPDATE" && payload.new) {
+          const gameState = payload.new;
+          console.log("🔄 Game state updated:", gameState);
+
+          // Map players with icons
+          const mappedPlayers = gameState.players.map((p, index) => ({
+            ...p,
+            icon: playerIcons[index],
+          }));
+
+          // ✅ Update state immediately
+          setPlayers(mappedPlayers);
+          setCurrentPlayerIndex(gameState.current_turn_index);
+          setDiceValue(gameState.dice_value);
+          setIsRolling(gameState.is_rolling);
+          setGameStatus(gameState.game_status);
+
+          // ✅ If animation finished (is_rolling = false), reset animation state
+          if (!gameState.is_rolling) {
+            setIsAnimating(false);
+          }
+        }
+      });
+    };
+
+    setupSubscription();
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [gameMode, lobbyCode]);
+
+  // Initialize audio
+  useEffect(() => {
     jumpAudioRef.current = new Audio(jumpSound);
     snakeAudioRef.current = new Audio(snakeSound);
     ladderAudioRef.current = new Audio(ladderSound);
     winAudioRef.current = new Audio(winSound);
 
-    // Background music
     musicRefs.current = [
       new Audio(music1),
       new Audio(music2),
       new Audio(music3),
     ];
 
-    // Set up music playlist - auto play next track when one ends
     musicRefs.current.forEach((audio, index) => {
       audio.volume = musicVolume / 100;
       audio.addEventListener("ended", () => {
-        // Play next track
         currentMusicIndexRef.current = (index + 1) % musicRefs.current.length;
         const nextAudio = musicRefs.current[currentMusicIndexRef.current];
         if (nextAudio && !isMusicMuted) {
@@ -182,7 +292,6 @@ const Game = () => {
       });
     });
 
-    // Start first music track
     const firstTrack = musicRefs.current[0];
     if (firstTrack) {
       firstTrack
@@ -191,7 +300,6 @@ const Game = () => {
     }
 
     return () => {
-      // Cleanup: stop all music
       musicRefs.current.forEach((audio) => {
         if (audio) {
           audio.pause();
@@ -201,7 +309,7 @@ const Game = () => {
     };
   }, []);
 
-  // Update sound effects volume
+  // Update volumes
   useEffect(() => {
     const volume = isSoundMuted ? 0 : soundVolume / 100;
     if (jumpAudioRef.current) jumpAudioRef.current.volume = volume * 0.3;
@@ -210,16 +318,12 @@ const Game = () => {
     if (winAudioRef.current) winAudioRef.current.volume = volume * 0.6;
   }, [soundVolume, isSoundMuted]);
 
-  // Update music volume and mute state
   useEffect(() => {
     const volume = isMusicMuted ? 0 : musicVolume / 100;
     musicRefs.current.forEach((audio) => {
-      if (audio) {
-        audio.volume = volume;
-      }
+      if (audio) audio.volume = volume;
     });
 
-    // Handle mute/unmute
     const currentAudio = musicRefs.current[currentMusicIndexRef.current];
     if (currentAudio) {
       if (isMusicMuted) {
@@ -232,7 +336,6 @@ const Game = () => {
     }
   }, [musicVolume, isMusicMuted]);
 
-  // Play sound helper
   const playSound = (audioRef) => {
     if (audioRef && audioRef.current && !isSoundMuted) {
       audioRef.current.currentTime = 0;
@@ -242,7 +345,7 @@ const Game = () => {
     }
   };
 
-  // Auto-play for bots
+  // Bot auto-play
   useEffect(() => {
     if (
       gameMode === "bot" &&
@@ -259,21 +362,140 @@ const Game = () => {
     }
   }, [currentPlayerIndex, isRolling, gameStatus, currentPlayer, gameMode]);
 
-  const handleDiceRoll = (value, isBot = false) => {
+  const handleDiceRoll = async (value, isBot = false) => {
     if (gameStatus === "won") return;
+    if (isAnimating) {
+      console.log("⏳ Animation in progress, please wait");
+      return;
+    }
+    if (isRolling) {
+      console.log("⏳ Dice already rolling");
+      return;
+    }
 
+    // Multiplayer: Only current player can roll
+    if (gameMode === "multiplayer" && !isMyTurn && !isBot) {
+      alert("It's not your turn!");
+      return;
+    }
+
+    console.log("🎲 Rolling dice:", value);
     setDiceValue(value);
     setIsRolling(true);
 
-    if (isBot) {
-      movePlayer(value);
+    if (gameMode === "multiplayer") {
+      // ✅ FIXED: Update dice in database with turn lock
+      try {
+        console.log("📤 Sending roll to database...");
+        await rollDice(lobbyCode, value, currentPlayerIndex);
+        console.log("✅ Roll saved to database");
+
+        // ✅ Animate locally (no DB updates during animation)
+        setIsAnimating(true);
+        await movePlayerAnimationMultiplayer(value, currentPlayer.position);
+      } catch (error) {
+        console.error("❌ Roll dice failed:", error);
+        alert("Failed to roll - it may not be your turn anymore!");
+        setIsRolling(false);
+        setIsAnimating(false);
+      }
     } else {
-      setTimeout(() => {
+      // Bot mode - local game
+      if (isBot) {
         movePlayer(value);
-      }, 2100);
+      } else {
+        setTimeout(() => {
+          movePlayer(value);
+        }, 2100);
+      }
     }
   };
 
+  // ✅ FIXED: Animation for multiplayer (local state only, then ONE DB update)
+  const movePlayerAnimationMultiplayer = async (steps, startPosition) => {
+    const targetPos = Math.min(startPosition + steps, 100);
+
+    if (startPosition + steps > 100) {
+      setIsRolling(false);
+      setIsAnimating(false);
+      await nextTurn(lobbyCode);
+      return;
+    }
+
+    // ✅ Animate LOCALLY (update local state, not database)
+    const updatedPlayers = [...players];
+    const playerToMove = updatedPlayers.find((p) => p.id === currentPlayer.id);
+
+    if (!playerToMove) {
+      console.error("❌ Player not found for animation");
+      setIsRolling(false);
+      setIsAnimating(false);
+      return;
+    }
+
+    // Animate step by step
+    for (let i = startPosition + 1; i <= targetPos; i++) {
+      playSound(jumpAudioRef);
+      playerToMove.position = i;
+      setPlayers([...updatedPlayers]); // ✅ Local state only
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+
+    let finalPosition = targetPos;
+
+    // Check for snake
+    if (SNAKES[finalPosition]) {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      playSound(snakeAudioRef);
+      finalPosition = SNAKES[finalPosition];
+      playerToMove.position = finalPosition;
+      setPlayers([...updatedPlayers]); // ✅ Local state only
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    // Check for ladder
+    if (LADDERS[finalPosition]) {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      playSound(ladderAudioRef);
+      finalPosition = LADDERS[finalPosition];
+      playerToMove.position = finalPosition;
+      setPlayers([...updatedPlayers]); // ✅ Local state only
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    // ✅ NOW update database with FINAL position (ONE update)
+    try {
+      await updatePlayerPosition(lobbyCode, currentPlayer.id, finalPosition);
+      console.log("✅ Final position updated in DB:", finalPosition);
+    } catch (error) {
+      console.error("❌ Failed to update position:", error);
+      setIsRolling(false);
+      setIsAnimating(false);
+      return;
+    }
+
+    // Check for win
+    if (finalPosition === 100) {
+      playSound(winAudioRef);
+      await setWinner(lobbyCode, currentPlayer.id);
+      setIsRolling(false);
+      setIsAnimating(false);
+      return;
+    }
+
+    // Move to next turn
+    try {
+      await nextTurn(lobbyCode);
+      console.log("✅ Turn moved to next player");
+    } catch (error) {
+      console.error("❌ Failed to move to next turn:", error);
+    }
+
+    setIsRolling(false);
+    setIsAnimating(false);
+  };
+
+  // Local game player movement (bot mode)
   const movePlayer = async (steps) => {
     const updatedPlayers = [...players];
     const player = updatedPlayers[currentPlayerIndex];
@@ -328,11 +550,15 @@ const Game = () => {
     }, 500);
   };
 
-  const resetGame = () => {
-    setPlayers(players.map((p) => ({ ...p, position: 0 })));
-    setCurrentPlayerIndex(0);
-    setDiceValue(null);
-    setGameStatus("playing");
+  const handleResetGame = async () => {
+    if (gameMode === "multiplayer") {
+      await resetGameState(lobbyCode);
+    } else {
+      setPlayers(players.map((p) => ({ ...p, position: 0 })));
+      setCurrentPlayerIndex(0);
+      setDiceValue(null);
+      setGameStatus("playing");
+    }
   };
 
   const handleBack = () => {
@@ -344,7 +570,7 @@ const Game = () => {
     navigate("/lobby");
   };
 
-  const leaderboard = getLeaderboard();
+  const leaderboard = [...players].sort((a, b) => b.position - a.position);
 
   return (
     <div className="game-page">
@@ -354,7 +580,6 @@ const Game = () => {
         </button>
         <h1>🐍 Snake & Ladder 🪜</h1>
 
-        {/* Audio Control Button */}
         <button
           className="audio-control-btn"
           onClick={() => setShowAudioControls(!showAudioControls)}
@@ -362,7 +587,6 @@ const Game = () => {
           🔊
         </button>
 
-        {/* Audio Controls Modal */}
         {showAudioControls && (
           <div
             className="audio-modal-overlay"
@@ -380,7 +604,6 @@ const Game = () => {
               </div>
 
               <div className="audio-modal-content">
-                {/* Sound Effects Control */}
                 <div className="audio-control-section">
                   <div className="audio-control-header">
                     <span className="audio-icon">🔔</span>
@@ -408,7 +631,6 @@ const Game = () => {
                   <div className="volume-value">{soundVolume}%</div>
                 </div>
 
-                {/* Background Music Control */}
                 <div className="audio-control-section">
                   <div className="audio-control-header">
                     <span className="audio-icon">🎵</span>
@@ -462,7 +684,7 @@ const Game = () => {
             <span className="mode-badge">
               {gameMode === "bot"
                 ? `🤖 Bot Game (${botCount} bot${botCount > 1 ? "s" : ""})`
-                : `👥 Multiplayer`}
+                : `👥 Multiplayer ${isMyTurn ? "(Your Turn!)" : ""}`}
             </span>
           </div>
 
@@ -483,13 +705,29 @@ const Game = () => {
             </div>
           </div>
 
-          {!currentPlayer?.isBot && (
+          {gameMode === "bot" && !currentPlayer?.isBot && (
             <Dice
               onRoll={handleDiceRoll}
-              disabled={isRolling || gameStatus === "won"}
+              disabled={isRolling || gameStatus === "won" || isAnimating}
               currentValue={diceValue}
             />
           )}
+
+          {gameMode === "multiplayer" && isMyTurn && (
+            <Dice
+              onRoll={handleDiceRoll}
+              disabled={isRolling || gameStatus === "won" || isAnimating}
+              currentValue={diceValue}
+            />
+          )}
+
+          {gameMode === "multiplayer" &&
+            !isMyTurn &&
+            gameStatus === "playing" && (
+              <div className="waiting-turn">
+                <p>⏳ Waiting for {currentPlayer?.name}'s turn...</p>
+              </div>
+            )}
 
           {currentPlayer?.isBot && isRolling && (
             <div className="bot-thinking">
@@ -502,7 +740,6 @@ const Game = () => {
             </div>
           )}
 
-          {/* Leaderboard */}
           <div className="leaderboard">
             <h3>🏆 Leaderboard</h3>
             {leaderboard.map((player, index) => (
@@ -531,6 +768,7 @@ const Game = () => {
                 <div className="leaderboard-info">
                   <span className="leaderboard-name">
                     {player.name} {player.isBot && "🤖"}
+                    {player.id === currentUserId && " (You)"}
                   </span>
                   <span className="leaderboard-position">
                     Square {player.position}
@@ -553,7 +791,7 @@ const Game = () => {
                   <p className="winner-name">{leaderboard[0]?.name}</p>
                 </div>
               </div>
-              <button onClick={resetGame} className="reset-btn">
+              <button onClick={handleResetGame} className="reset-btn">
                 Play Again
               </button>
               <button onClick={handleBack} className="back-lobby-btn">

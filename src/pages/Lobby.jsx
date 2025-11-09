@@ -6,7 +6,6 @@ import {
   LogInIcon,
   MinusIcon,
   PlusIcon,
-  ArrowLeftIcon,
 } from "lucide-react";
 import { JoinLobby } from "../components/JoinLobby";
 import { createLobby, joinLobby } from "../services/lobbyService";
@@ -19,10 +18,6 @@ export function Lobby() {
   const [playerCount, setPlayerCount] = useState(2);
   const [showBotSelection, setShowBotSelection] = useState(false);
   const [showPlayerSelection, setShowPlayerSelection] = useState(false);
-
-  const handleBackToHome = () => {
-    navigate("/");
-  };
 
   const handlePlayWithComputer = () => {
     setShowBotSelection(true);
@@ -57,6 +52,8 @@ export function Lobby() {
       localStorage.setItem("maxPlayers", playerCount.toString());
       localStorage.setItem("isHost", "true");
 
+      console.log("✅ Lobby created, navigating to waiting room:", lobby.code);
+
       // Navigate to waiting room
       navigate(`/lobby/${lobby.code}`);
     } catch (error) {
@@ -69,20 +66,23 @@ export function Lobby() {
     try {
       const playerName = localStorage.getItem("playerName") || "Player";
 
+      console.log("🔍 Attempting to join lobby:", code);
+
       // Join lobby in Supabase
       const lobby = await joinLobby(code, playerName);
 
-      console.log("Joined lobby:", lobby);
+      console.log("✅ Joined lobby successfully:", lobby);
 
       // Save join settings
       localStorage.setItem("gameMode", "multiplayer");
       localStorage.setItem("lobbyCode", code);
       localStorage.setItem("isHost", "false");
 
-      // Navigate to waiting room (not game!)
+      // Navigate to waiting room (NOT /game!)
+      console.log("➡️ Navigating to waiting room:", `/lobby/${code}`);
       navigate(`/lobby/${code}`);
     } catch (error) {
-      console.error("Error joining lobby:", error);
+      console.error("❌ Error joining lobby:", error);
       alert(
         error.message ||
           "Failed to join lobby. Please check the code and try again."
@@ -199,12 +199,6 @@ export function Lobby() {
   return (
     <div className="lobby-container">
       <div className="lobby-content">
-        {/* Back to Home Button */}
-        <button onClick={handleBackToHome} className="back-to-home-button">
-          <ArrowLeftIcon className="back-icon" />
-          <span>Back to Home</span>
-        </button>
-
         <div className="lobby-header">
           <h1 className="lobby-title">Game Lobby</h1>
           <p className="lobby-subtitle">Choose your game mode</p>

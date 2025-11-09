@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { CopyIcon, CheckIcon, UsersIcon } from "lucide-react";
-import {
-  subscribeLobbyChanges,
-  unsubscribeLobby,
-  startGame as startGameService,
-} from "../services/lobbyService";
+import { supabase } from "../services/supabaseClient";
+import { startGame as startGameService } from "../services/lobbyService";
 
 export function LobbyCreated({
   lobbyCode,
@@ -21,28 +18,65 @@ export function LobbyCreated({
       isHost: true,
     },
   ]);
-  const [lobby, setLobby] = useState(null);
 
   // Subscribe to real-time lobby updates
   useEffect(() => {
-    const channel = subscribeLobbyChanges(lobbyCode, (payload) => {
-      if (payload.eventType === "UPDATE" && payload.new) {
-        console.log("Lobby updated:", payload.new);
-        setLobby(payload.new);
-        setPlayers(payload.new.current_players || []);
+    console.log(
+      "📡 LobbyCreated: Setting up realtime subscription for",
+      lobbyCode
+    );
 
-        // If game started, navigate to game
-        if (payload.new.status === "playing" && onStartGame) {
-          onStartGame();
+    const channel = supabase
+      .channel(`lobby-created:${lobbyCode}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "lobbies",
+          filter: `code=eq.${lobbyCode}`,
+        },
+        (payload) => {
+          console.log(
+            "🔔 LobbyCreated: Realtime event:",
+            payload.eventType,
+            payload
+          );
+
+          if (payload.eventType === "UPDATE" && payload.new) {
+            console.log(
+              "🔄 LobbyCreated: Updating players:",
+              payload.new.current_players
+            );
+            setPlayers(payload.new.current_players || []);
+
+            // If game started, navigate to game
+            if (payload.new.status === "playing" && onStartGame) {
+              console.log(
+                "🎮 LobbyCreated: Game starting, calling onStartGame"
+              );
+              onStartGame();
+            }
+          } else if (payload.eventType === "DELETE") {
+            console.log("❌ LobbyCreated: Lobby deleted");
+            alert("Lobby was closed");
+            onBack();
+          }
         }
-      } else if (payload.eventType === "DELETE") {
-        alert("Lobby was closed by host");
-        onBack();
-      }
-    });
+      )
+      .subscribe((status, err) => {
+        console.log("📡 LobbyCreated: Subscription status:", status);
+        if (err) {
+          console.error("❌ LobbyCreated: Subscription error:", err);
+        }
+        if (status === "SUBSCRIBED") {
+          console.log("✅ LobbyCreated: Successfully subscribed!");
+        }
+      });
 
     return () => {
-      unsubscribeLobby(channel);
+      console.log("🔌 LobbyCreated: Cleaning up subscription");
+      supabase.removeChannel(channel);
     };
   }, [lobbyCode, onStartGame, onBack]);
 
@@ -54,11 +88,12 @@ export function LobbyCreated({
 
   const handleStartGame = async () => {
     try {
-      console.log("Starting game with lobby code:", lobbyCode);
+      console.log("🚀 LobbyCreated: Starting game with lobby code:", lobbyCode);
       await startGameService(lobbyCode);
+      console.log("✅ LobbyCreated: Start game command sent");
       // Real-time subscription will handle navigation
     } catch (error) {
-      console.error("Error starting game:", error);
+      console.error("❌ LobbyCreated: Error starting game:", error);
       alert(error.message || "Failed to start game");
     }
   };
