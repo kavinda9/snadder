@@ -6,6 +6,7 @@ import {
   LogInIcon,
   MinusIcon,
   PlusIcon,
+  ArrowLeftIcon,
 } from "lucide-react";
 import { JoinLobby } from "../components/JoinLobby";
 import { createLobby, joinLobby } from "../services/lobbyService";
@@ -18,6 +19,10 @@ export function Lobby() {
   const [playerCount, setPlayerCount] = useState(2);
   const [showBotSelection, setShowBotSelection] = useState(false);
   const [showPlayerSelection, setShowPlayerSelection] = useState(false);
+
+  const handleBackToHome = () => {
+    navigate("/");
+  };
 
   const handlePlayWithComputer = () => {
     setShowBotSelection(true);
@@ -198,6 +203,41 @@ export function Lobby() {
 
   return (
     <div className="lobby-container">
+      {/* Back to Home Button */}
+      <button
+        onClick={handleBackToHome}
+        className="back-to-home-button"
+        style={{
+          position: "absolute",
+          top: "20px",
+          left: "20px",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          padding: "10px 20px",
+          backgroundColor: "rgba(255, 255, 255, 0.1)",
+          border: "2px solid rgba(255, 255, 255, 0.2)",
+          borderRadius: "10px",
+          color: "white",
+          fontSize: "16px",
+          fontWeight: "600",
+          cursor: "pointer",
+          transition: "all 0.3s ease",
+          zIndex: 10,
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.backgroundColor = "rgba(255, 255, 255, 0.2)";
+          e.target.style.transform = "translateX(-5px)";
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.backgroundColor = "rgba(255, 255, 255, 0.1)";
+          e.target.style.transform = "translateX(0)";
+        }}
+      >
+        <ArrowLeftIcon size={20} />
+        Back to Home
+      </button>
+
       <div className="lobby-content">
         <div className="lobby-header">
           <h1 className="lobby-title">Game Lobby</h1>

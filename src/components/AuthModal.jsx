@@ -86,15 +86,20 @@ function AuthModal({ isOpen, onClose }) {
         if (isLogin) {
           // LOGIN
           const user = await signInWithEmail(formData.email, formData.password);
-          console.log("Login successful:", user);
+          console.log("✅ Login successful:", user);
 
           // Save user info
-          localStorage.setItem("playerName", user.email.split("@")[0]);
+          const username =
+            user.user_metadata?.username ||
+            user.email.split("@")[0] ||
+            "Player";
+          localStorage.setItem("playerName", username);
           localStorage.setItem("userId", user.id);
 
-          // Close modal and redirect to game
+          // Just close modal - DON'T navigate anywhere!
+          // User stays on home page
           onClose();
-          navigate("/game");
+          console.log("🏠 Staying on home page after login");
         } else {
           // SIGNUP
           const user = await signUpWithEmail(
@@ -102,15 +107,16 @@ function AuthModal({ isOpen, onClose }) {
             formData.password,
             formData.username
           );
-          console.log("Signup successful:", user);
+          console.log("✅ Signup successful:", user);
 
           // Save user info
           localStorage.setItem("playerName", formData.username);
           localStorage.setItem("userId", user.id);
 
-          // Close modal and redirect to game
+          // Just close modal - DON'T navigate anywhere!
+          // User stays on home page
           onClose();
-          navigate("/game");
+          console.log("🏠 Staying on home page after signup");
         }
 
         // Clear form
@@ -143,7 +149,8 @@ function AuthModal({ isOpen, onClose }) {
     setLoading(true);
     try {
       await signInWithGoogle();
-      // OAuth will redirect automatically
+      // OAuth will redirect to /auth/callback, then back to home
+      console.log("🔄 Redirecting to Google OAuth...");
     } catch (error) {
       console.error("Google sign in error:", error);
       alert(error.message);
@@ -155,7 +162,8 @@ function AuthModal({ isOpen, onClose }) {
     setLoading(true);
     try {
       await signInWithDiscord();
-      // OAuth will redirect automatically
+      // OAuth will redirect to /auth/callback, then back to home
+      console.log("🔄 Redirecting to Discord OAuth...");
     } catch (error) {
       console.error("Discord sign in error:", error);
       alert(error.message);

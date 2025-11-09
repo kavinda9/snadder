@@ -1,0 +1,7 @@
+.env
+list.txt
+node_modules
+package-lock.json
+package.json
+routes
+server.js

@@ -11,8 +11,9 @@ import Game from "./pages/Game";
 import { Lobby } from "./pages/Lobby";
 import { LobbyWaitingRoom } from "./pages/LobbyWaitingRoom";
 import AuthModal from "./components/AuthModal";
-import Loading from "./components/loading"; // Import custom loading
+import Loading from "./components/loading";
 import { supabase } from "./services/supabaseClient";
+import { logOut } from "./services/supabaseAuth";
 import snadderLogo from "./assets/snadder.svg";
 
 function Home() {
@@ -20,13 +21,53 @@ function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [modalKey, setModalKey] = useState(0);
+  const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
+    // Check for authenticated user
+    const checkUser = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session) {
+          setCurrentUser(session.user);
+          const username =
+            session.user.user_metadata?.username ||
+            session.user.user_metadata?.full_name ||
+            session.user.email?.split("@")[0] ||
+            "Player";
+          setPlayerName(username);
+        }
+      } catch (error) {
+        console.error("Error checking user:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkUser();
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session) {
+        setCurrentUser(session.user);
+        const username =
+          session.user.user_metadata?.username ||
+          session.user.user_metadata?.full_name ||
+          session.user.email?.split("@")[0] ||
+          "Player";
+        setPlayerName(username);
+      } else if (event === "SIGNED_OUT") {
+        setCurrentUser(null);
+        setPlayerName("");
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handlePlay = () => {
@@ -47,20 +88,60 @@ function Home() {
     setIsAuthModalOpen(false);
   };
 
+  const handleSignOut = async () => {
+    try {
+      await logOut();
+      setCurrentUser(null);
+      setPlayerName("");
+      localStorage.removeItem("playerName");
+      localStorage.removeItem("userId");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   if (isLoading) {
-    return <Loading />; // Use custom loading component
+    return <Loading />;
   }
 
   return (
     <>
       <div className="home">
         <nav className="top-nav">
-          <Link to="/store" className="nav-link">
-            <button className="nav-btn">Store</button>
-          </Link>
-          <button className="nav-btn" onClick={handleOpenModal}>
-            Sign In
-          </button>
+          {/* Left side - Username or empty */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            {currentUser && (
+              <span
+                style={{
+                  color: "white",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  padding: "8px 16px",
+                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                  borderRadius: "8px",
+                  border: "2px solid rgba(255, 255, 255, 0.2)",
+                }}
+              >
+                👤 {playerName}
+              </span>
+            )}
+          </div>
+
+          {/* Right side - Store and Auth buttons */}
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <Link to="/store" className="nav-link">
+              <button className="nav-btn">Store</button>
+            </Link>
+            {currentUser ? (
+              <button className="nav-btn" onClick={handleSignOut}>
+                Sign Out
+              </button>
+            ) : (
+              <button className="nav-btn" onClick={handleOpenModal}>
+                Sign In
+              </button>
+            )}
+          </div>
         </nav>
 
         <div className="main-content">
@@ -77,6 +158,7 @@ function Home() {
               onKeyPress={(e) => {
                 if (e.key === "Enter") handlePlay();
               }}
+              disabled={!!currentUser} // Disable if signed in
             />
 
             <button onClick={handlePlay} className="play-btn">
@@ -170,17 +252,17 @@ function AuthCallback() {
             }
           }
 
-          // Redirect to lobby (NOT game!)
-          console.log("🎮 Redirecting to lobby...");
+          // ALWAYS redirect to HOME after OAuth login
+          console.log("🏠 Redirecting to home page...");
           setIsLoading(false);
-          navigate("/lobby");
+          navigate("/", { replace: true });
         } else {
           console.log("❌ No session found, redirecting to home");
-          navigate("/");
+          navigate("/", { replace: true });
         }
       } catch (error) {
         console.error("Error in OAuth callback:", error);
-        navigate("/");
+        navigate("/", { replace: true });
       }
     };
 
@@ -188,7 +270,7 @@ function AuthCallback() {
   }, [navigate]);
 
   if (isLoading) {
-    return <Loading />; // Use custom loading component
+    return <Loading />;
   }
 
   return null;
@@ -231,7 +313,7 @@ function App() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("🔔 Auth state changed:", event);
+      console.log("🔄 Auth state changed:", event);
 
       if (event === "SIGNED_IN" && session) {
         console.log("✅ User signed in:", session.user.email);
@@ -248,7 +330,7 @@ function App() {
   }, []);
 
   if (!isAuthReady) {
-    return <Loading />; // Use custom loading component
+    return <Loading />;
   }
 
   return (

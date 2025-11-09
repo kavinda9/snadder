@@ -164,7 +164,7 @@ const Game = () => {
         if (!lobbyCode) {
           console.error("❌ No lobby code for multiplayer game");
           alert("No lobby code found!");
-          navigate("/lobby");
+          navigate("/lobby", { replace: true }); // ✅ FIXED: Added replace: true
           return;
         }
 
@@ -174,7 +174,7 @@ const Game = () => {
             console.error("❌ No lobby data found!");
             console.log("Location state:", location.state);
             alert("No lobby data found! Please start from the lobby.");
-            navigate("/lobby");
+            navigate("/lobby", { replace: true }); // ✅ FIXED: Added replace: true
             return;
           }
 
@@ -215,7 +215,7 @@ const Game = () => {
           console.error("❌ Error initializing multiplayer game:", error);
           console.error("Error details:", error.message);
           alert(`Failed to initialize game: ${error.message}`);
-          navigate("/lobby");
+          navigate("/lobby", { replace: true }); // ✅ FIXED: Added replace: true
         }
       }
     };
@@ -223,13 +223,15 @@ const Game = () => {
     initializeGame();
   }, [gameMode, lobbyCode, botCount]);
 
-  // ✅ FIXED: Subscribe to multiplayer game updates (NO ANIMATION LOGIC)
+  // ✅ FIXED: Subscribe to multiplayer game updates + Presence tracking
   useEffect(() => {
-    if (gameMode !== "multiplayer" || !lobbyCode) return;
+    if (gameMode !== "multiplayer" || !lobbyCode || !currentUserId) return;
 
     let channel;
+    let presenceChannel;
 
     const setupSubscription = () => {
+      // Subscribe to game state changes
       channel = subscribeToGameState(lobbyCode, (payload) => {
         if (payload.eventType === "UPDATE" && payload.new) {
           const gameState = payload.new;
@@ -252,18 +254,84 @@ const Game = () => {
           if (!gameState.is_rolling) {
             setIsAnimating(false);
           }
+        } else if (payload.eventType === "DELETE") {
+          // ✅ FIXED: Game was deleted
+          console.log("❌ Game deleted");
+          alert("The game has ended. Returning to lobby...");
+          localStorage.removeItem("gameMode");
+          localStorage.removeItem("lobbyCode");
+          navigate("/lobby", { replace: true });
         }
       });
+
+      // ✅ FIXED: Track player presence (detect disconnects)
+      presenceChannel = supabase
+        .channel(`presence:game:${lobbyCode}`)
+        .on("presence", { event: "sync" }, () => {
+          const state = presenceChannel.presenceState();
+          console.log("👥 Players online:", state);
+
+          const onlineUserIds = Object.values(state)
+            .flat()
+            .map((p) => p.user_id);
+
+          console.log("🟢 Online user IDs:", onlineUserIds);
+          console.log(
+            "👥 Game players:",
+            players.map((p) => p.id)
+          );
+
+          // Check if any player disconnected
+          const disconnectedPlayers = players.filter(
+            (p) => !p.isBot && !onlineUserIds.includes(p.id)
+          );
+
+          if (disconnectedPlayers.length > 0) {
+            disconnectedPlayers.forEach((player) => {
+              console.log("🚪 Player disconnected:", player.name);
+            });
+          }
+        })
+        .on("presence", { event: "join" }, ({ key, newPresences }) => {
+          console.log("✅ Player joined presence:", newPresences);
+        })
+        .on("presence", { event: "leave" }, ({ key, leftPresences }) => {
+          console.log("👋 Player left presence:", leftPresences);
+          const leftUserId = leftPresences[0]?.user_id;
+          const leftPlayer = players.find((p) => p.id === leftUserId);
+
+          if (leftPlayer) {
+            alert(`${leftPlayer.name} has left the game!`);
+            // End game when player leaves
+            handleBack();
+          }
+        })
+        .subscribe(async (status) => {
+          console.log("📡 Presence subscription status:", status);
+          if (status === "SUBSCRIBED") {
+            // Track current user's presence
+            await presenceChannel.track({
+              user_id: currentUserId,
+              online_at: new Date().toISOString(),
+            });
+            console.log("✅ Presence tracked for:", currentUserId);
+          }
+        });
     };
 
     setupSubscription();
 
     return () => {
+      console.log("🧹 Cleaning up subscriptions");
       if (channel) {
         supabase.removeChannel(channel);
       }
+      if (presenceChannel) {
+        presenceChannel.untrack();
+        supabase.removeChannel(presenceChannel);
+      }
     };
-  }, [gameMode, lobbyCode]);
+  }, [gameMode, lobbyCode, currentUserId, players]);
 
   // Initialize audio
   useEffect(() => {
@@ -561,13 +629,48 @@ const Game = () => {
     }
   };
 
-  const handleBack = () => {
-    localStorage.removeItem("gameMode");
-    localStorage.removeItem("botCount");
-    localStorage.removeItem("lobbyCode");
-    localStorage.removeItem("maxPlayers");
-    localStorage.removeItem("isHost");
-    navigate("/lobby");
+  // ✅ FIXED: Proper cleanup when leaving game
+  const handleBack = async () => {
+    try {
+      console.log("👋 Leaving game...");
+
+      // Clean up localStorage first
+      localStorage.removeItem("gameMode");
+      localStorage.removeItem("botCount");
+      localStorage.removeItem("lobbyCode");
+      localStorage.removeItem("maxPlayers");
+      localStorage.removeItem("isHost");
+
+      // Navigate immediately to prevent redirect loop
+      navigate("/lobby", { replace: true });
+
+      // Clean up database in background (don't wait for it)
+      if (gameMode === "multiplayer" && lobbyCode) {
+        console.log("🗑️ Cleaning up multiplayer game data...");
+
+        // Delete lobby
+        supabase
+          .from("lobbies")
+          .delete()
+          .eq("code", lobbyCode)
+          .then(() => {
+            console.log("✅ Lobby deleted");
+          });
+
+        // Delete game state
+        supabase
+          .from("game_states")
+          .delete()
+          .eq("lobby_code", lobbyCode)
+          .then(() => {
+            console.log("✅ Game state deleted");
+          });
+      }
+    } catch (error) {
+      console.error("❌ Error during cleanup:", error);
+      // Still navigate even if cleanup fails
+      navigate("/lobby", { replace: true });
+    }
   };
 
   const leaderboard = [...players].sort((a, b) => b.position - a.position);

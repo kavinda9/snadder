@@ -997,3 +997,17 @@
   font-size: 1.1rem;
   font-weight: 500;
 }
+
+.waiting-turn {
+  text-align: center;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  margin: 1rem 0;
+}
+
+.waiting-turn p {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.1rem;
+  font-weight: 500;
+}
