@@ -83,7 +83,8 @@ const Game = () => {
   const [diceValue, setDiceValue] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
   const [gameStatus, setGameStatus] = useState("playing");
-  const [isAnimating, setIsAnimating] = useState(false); // ✅ Track local animation state
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [disconnectMessage, setDisconnectMessage] = useState(""); // ✅ For toast messages
 
   const currentPlayer = players[currentPlayerIndex];
   const isMyTurn = currentPlayer?.id === currentUserId;
@@ -226,13 +227,15 @@ const Game = () => {
   // ✅ FIXED: Subscribe to multiplayer game updates + Presence tracking
   useEffect(() => {
     if (gameMode !== "multiplayer" || !lobbyCode || !currentUserId) return;
+    // Don't start presence tracking until players are loaded
+    if (players.length === 0) return;
 
     let channel;
     let presenceChannel;
 
     const setupSubscription = () => {
       // Subscribe to game state changes
-      channel = subscribeToGameState(lobbyCode, (payload) => {
+      channel = subscribeToGameState(lobbyCode, async (payload) => {
         if (payload.eventType === "UPDATE" && payload.new) {
           const gameState = payload.new;
           console.log("🔄 Game state updated:", gameState);
@@ -255,55 +258,116 @@ const Game = () => {
             setIsAnimating(false);
           }
         } else if (payload.eventType === "DELETE") {
-          // ✅ FIXED: Game was deleted
+          // ✅ Game was deleted
           console.log("❌ Game deleted");
-          alert("The game has ended. Returning to lobby...");
-          localStorage.removeItem("gameMode");
-          localStorage.removeItem("lobbyCode");
-          navigate("/lobby", { replace: true });
+          setDisconnectMessage("The game has ended. Returning to lobby...");
+          setTimeout(() => {
+            localStorage.removeItem("gameMode");
+            localStorage.removeItem("lobbyCode");
+            navigate("/lobby", { replace: true });
+          }, 3000);
         }
       });
 
       // ✅ FIXED: Track player presence (detect disconnects)
       presenceChannel = supabase
         .channel(`presence:game:${lobbyCode}`)
-        .on("presence", { event: "sync" }, () => {
-          const state = presenceChannel.presenceState();
-          console.log("👥 Players online:", state);
-
-          const onlineUserIds = Object.values(state)
-            .flat()
-            .map((p) => p.user_id);
-
-          console.log("🟢 Online user IDs:", onlineUserIds);
-          console.log(
-            "👥 Game players:",
-            players.map((p) => p.id)
-          );
-
-          // Check if any player disconnected
-          const disconnectedPlayers = players.filter(
-            (p) => !p.isBot && !onlineUserIds.includes(p.id)
-          );
-
-          if (disconnectedPlayers.length > 0) {
-            disconnectedPlayers.forEach((player) => {
-              console.log("🚪 Player disconnected:", player.name);
-            });
-          }
-        })
-        .on("presence", { event: "join" }, ({ key, newPresences }) => {
-          console.log("✅ Player joined presence:", newPresences);
-        })
-        .on("presence", { event: "leave" }, ({ key, leftPresences }) => {
+        .on("presence", { event: "leave" }, async ({ key, leftPresences }) => {
           console.log("👋 Player left presence:", leftPresences);
           const leftUserId = leftPresences[0]?.user_id;
+
+          // Don't do anything if it's the current user leaving
+          if (leftUserId === currentUserId) return;
+
           const leftPlayer = players.find((p) => p.id === leftUserId);
 
           if (leftPlayer) {
-            alert(`${leftPlayer.name} has left the game!`);
-            // End game when player leaves
-            handleBack();
+            console.log("🚪 Player disconnected:", leftPlayer.name);
+
+            // Show toast message
+            setDisconnectMessage(`${leftPlayer.name} has left the game`);
+            setTimeout(() => setDisconnectMessage(""), 5000);
+
+            // Get fresh game state
+            const gameState = await getGameState(lobbyCode);
+            const remainingPlayers = gameState.players.filter(
+              (p) => p.id !== leftUserId
+            );
+
+            // If only 1 player left, end the game
+            if (remainingPlayers.length === 1) {
+              setDisconnectMessage("Not enough players. Returning to lobby...");
+              setTimeout(() => {
+                handleBack();
+              }, 3000);
+              return;
+            }
+
+            // Check if the leaving player was the host
+            const wasHost =
+              leftPlayer.id ===
+              gameState.players.find((p) => p.id === leftUserId)?.id;
+
+            // Promote first remaining player to host if needed
+            if (wasHost && remainingPlayers.length > 0) {
+              remainingPlayers[0].isHost = true;
+              console.log("👑 New host:", remainingPlayers[0].name);
+
+              // Update lobby to reflect new host
+              try {
+                await supabase
+                  .from("lobbies")
+                  .update({
+                    host_id: remainingPlayers[0].id,
+                    host_name: remainingPlayers[0].name,
+                    current_players: remainingPlayers,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq("code", lobbyCode);
+                console.log("✅ Lobby host updated");
+              } catch (error) {
+                console.error("❌ Failed to update lobby host:", error);
+              }
+            }
+
+            // Adjust turn index if needed
+            const currentTurnPlayer =
+              gameState.players[gameState.current_turn_index];
+            let newTurnIndex = gameState.current_turn_index;
+
+            // If the disconnected player was the current turn, move to next
+            if (currentTurnPlayer?.id === leftUserId) {
+              newTurnIndex =
+                gameState.current_turn_index % remainingPlayers.length;
+            } else {
+              // Find the current player in the new array
+              const currentPlayerInNew = remainingPlayers.findIndex(
+                (p) => p.id === currentTurnPlayer?.id
+              );
+              if (currentPlayerInNew !== -1) {
+                newTurnIndex = currentPlayerInNew;
+              } else {
+                newTurnIndex = 0;
+              }
+            }
+
+            try {
+              // Update game state in database
+              const { error } = await supabase
+                .from("game_states")
+                .update({
+                  players: remainingPlayers,
+                  current_turn_index: newTurnIndex,
+                  current_turn_player_id: remainingPlayers[newTurnIndex]?.id,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("lobby_code", lobbyCode);
+
+              if (error) throw error;
+              console.log("✅ Player removed from game state");
+            } catch (error) {
+              console.error("❌ Failed to remove player:", error);
+            }
           }
         })
         .subscribe(async (status) => {
@@ -331,7 +395,7 @@ const Game = () => {
         supabase.removeChannel(presenceChannel);
       }
     };
-  }, [gameMode, lobbyCode, currentUserId, players]);
+  }, [gameMode, lobbyCode, currentUserId, players.length]);
 
   // Initialize audio
   useEffect(() => {
@@ -644,27 +708,28 @@ const Game = () => {
       // Navigate immediately to prevent redirect loop
       navigate("/lobby", { replace: true });
 
-      // Clean up database in background (don't wait for it)
+      // ✅ ONLY delete if in bot mode or if you're the last player
+      if (gameMode === "bot") {
+        // Bot mode - just clean up
+        return;
+      }
+
+      // For multiplayer, check if we're the last one before deleting
       if (gameMode === "multiplayer" && lobbyCode) {
-        console.log("🗑️ Cleaning up multiplayer game data...");
+        try {
+          const gameState = await getGameState(lobbyCode);
 
-        // Delete lobby
-        supabase
-          .from("lobbies")
-          .delete()
-          .eq("code", lobbyCode)
-          .then(() => {
-            console.log("✅ Lobby deleted");
-          });
-
-        // Delete game state
-        supabase
-          .from("game_states")
-          .delete()
-          .eq("lobby_code", lobbyCode)
-          .then(() => {
-            console.log("✅ Game state deleted");
-          });
+          // Only delete if 1 or fewer players remain
+          if (gameState.players.length <= 1) {
+            console.log("🗑️ Last player leaving, cleaning up...");
+            supabase.from("lobbies").delete().eq("code", lobbyCode);
+            supabase.from("game_states").delete().eq("lobby_code", lobbyCode);
+          } else {
+            console.log("✅ Other players still in game, keeping lobby alive");
+          }
+        } catch (error) {
+          console.error("Error checking game state:", error);
+        }
       }
     } catch (error) {
       console.error("❌ Error during cleanup:", error);
@@ -904,6 +969,13 @@ const Game = () => {
           )}
         </div>
       </div>
+
+      {/* Toast Notification for Player Disconnect */}
+      {disconnectMessage && (
+        <div className="disconnect-toast">
+          <p>{disconnectMessage}</p>
+        </div>
+      )}
     </div>
   );
 };
