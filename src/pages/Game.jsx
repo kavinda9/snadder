@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Board from "../components/Board";
 import Dice from "../components/Dice";
+import DicePopup from "../components/DicePopup";
 import { supabase } from "../services/supabaseClient";
 import {
   createGameState,
@@ -81,6 +82,7 @@ const Game = () => {
   const [players, setPlayers] = useState([]);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [diceValue, setDiceValue] = useState(null);
+  const [showDicePopup, setShowDicePopup] = useState(false);
   const [isRolling, setIsRolling] = useState(false);
   const [gameStatus, setGameStatus] = useState("playing");
   const [isAnimating, setIsAnimating] = useState(false);
@@ -512,6 +514,8 @@ const Game = () => {
     }
 
     console.log("🎲 Rolling dice:", value);
+    // If roll was triggered from the popup, close it immediately
+    setShowDicePopup(false);
     setDiceValue(value);
     setIsRolling(true);
 
@@ -550,6 +554,7 @@ const Game = () => {
     if (startPosition + steps > 100) {
       setIsRolling(false);
       setIsAnimating(false);
+      setShowDicePopup(false);
       await nextTurn(lobbyCode);
       return;
     }
@@ -612,6 +617,7 @@ const Game = () => {
       await setWinner(lobbyCode, currentPlayer.id);
       setIsRolling(false);
       setIsAnimating(false);
+      setShowDicePopup(false);
       return;
     }
 
@@ -625,6 +631,7 @@ const Game = () => {
 
     setIsRolling(false);
     setIsAnimating(false);
+    setShowDicePopup(false);
   };
 
   // Local game player movement (bot mode)
@@ -636,6 +643,7 @@ const Game = () => {
 
     if (currentPos + steps > 100) {
       setIsRolling(false);
+      setShowDicePopup(false);
       setTimeout(() => {
         setCurrentPlayerIndex((currentPlayerIndex + 1) % players.length);
       }, 500);
@@ -673,12 +681,14 @@ const Game = () => {
       setGameStatus("won");
       playSound(winAudioRef);
       setIsRolling(false);
+      setShowDicePopup(false);
       return;
     }
 
     setTimeout(() => {
       setCurrentPlayerIndex((currentPlayerIndex + 1) % players.length);
       setIsRolling(false);
+      setShowDicePopup(false);
     }, 500);
   };
 
@@ -881,6 +891,19 @@ const Game = () => {
             />
           )}
 
+          {/* Button to open the Dice Popup (enhanced roll UI) */}
+          {(gameMode === "bot" && !currentPlayer?.isBot) ||
+          (gameMode === "multiplayer" && isMyTurn) ? (
+            <button
+              className="open-dice-popup-btn"
+              onClick={() => setShowDicePopup(true)}
+              disabled={isRolling || gameStatus === "won" || isAnimating}
+              style={{ marginTop: "10px" }}
+            >
+              Open Dice Popup
+            </button>
+          ) : null}
+
           {gameMode === "multiplayer" && isMyTurn && (
             <Dice
               onRoll={handleDiceRoll}
@@ -888,6 +911,14 @@ const Game = () => {
               currentValue={diceValue}
             />
           )}
+
+          {/* Dice Popup overlay */}
+          <DicePopup
+            onRoll={handleDiceRoll}
+            currentPlayer={currentPlayer}
+            disabled={isRolling || gameStatus === "won" || isAnimating}
+            show={showDicePopup}
+          />
 
           {gameMode === "multiplayer" &&
             !isMyTurn &&
@@ -909,7 +940,7 @@ const Game = () => {
           )}
 
           <div className="leaderboard">
-            <h3>🏆 Leaderboard</h3>
+            <h3>Leaderboard</h3>
             {leaderboard.map((player, index) => (
               <div
                 key={player.id}

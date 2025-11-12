@@ -1,0 +1,352 @@
+/* DicePopup.css */
+
+/* Overlay positioning - Bottom center of game board */
+.dice-popup-overlay {
+  position: fixed;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%) translateY(150px);
+  z-index: 999;
+  opacity: 0;
+  transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  pointer-events: none;
+}
+
+.dice-popup-overlay.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: all;
+}
+
+/* Container */
+.dice-popup-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.4));
+}
+
+/* Animated glow rings */
+.dice-popup-glow-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 3px solid rgba(255, 215, 0, 0.6);
+  pointer-events: none;
+}
+
+.ring-1 {
+  width: 160px;
+  height: 160px;
+  animation: pulseRing 2s ease-out infinite;
+}
+
+.ring-2 {
+  width: 200px;
+  height: 200px;
+  animation: pulseRing 2s ease-out infinite 0.4s;
+}
+
+.ring-3 {
+  width: 240px;
+  height: 240px;
+  animation: pulseRing 2s ease-out infinite 0.8s;
+}
+
+@keyframes pulseRing {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0;
+  }
+}
+
+/* Main dice button */
+.dice-popup-button {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 30px rgba(255, 215, 0, 0.5),
+    inset 0 -5px 15px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 10;
+  overflow: hidden;
+}
+
+.dice-popup-button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(255, 255, 255, 0.8),
+    transparent 60%
+  );
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.dice-popup-button:hover:not(.disabled) {
+  transform: scale(1.1) translateY(-5px);
+  box-shadow: 0 15px 40px rgba(255, 215, 0, 0.7),
+    inset 0 -5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.dice-popup-button:active:not(.disabled) {
+  transform: scale(1.05) translateY(-2px);
+}
+
+.dice-popup-button.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dice-popup-button.rolling {
+  animation: shakeDice 0.1s infinite;
+}
+
+@keyframes shakeDice {
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+/* Inner content */
+.dice-popup-inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* Dice icon */
+.dice-popup-icon {
+  width: 70px;
+  height: 70px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  transition: transform 0.3s ease;
+}
+
+.dice-popup-icon.spinning {
+  animation: spinDice 1s linear infinite;
+}
+
+@keyframes spinDice {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.2);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+/* Dice value display */
+.dice-value-display {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 48px;
+  font-weight: bold;
+  color: #333;
+  text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.5);
+  animation: popIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes popIn {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Info section */
+.dice-popup-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 15px 25px;
+  border-radius: 20px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(255, 215, 0, 0.3);
+}
+
+.dice-popup-text {
+  margin: 0;
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+  text-shadow: 1px 1px 2px rgba(255, 215, 0, 0.3);
+}
+
+.dice-popup-player {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.player-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  animation: playerPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes playerPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+/* Sparkle effects */
+.sparkle {
+  position: absolute;
+  font-size: 20px;
+  opacity: 0;
+  pointer-events: none;
+  animation: sparkleFloat 3s ease-in-out infinite;
+}
+
+.sparkle-1 {
+  top: -30px;
+  left: 20px;
+  animation-delay: 0s;
+}
+
+.sparkle-2 {
+  top: -40px;
+  right: 20px;
+  animation-delay: 0.5s;
+}
+
+.sparkle-3 {
+  bottom: 100px;
+  left: -20px;
+  animation-delay: 1s;
+}
+
+.sparkle-4 {
+  bottom: 100px;
+  right: -20px;
+  animation-delay: 1.5s;
+}
+
+@keyframes sparkleFloat {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(0) rotate(0deg);
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-30px) rotate(180deg);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dice-popup-overlay {
+    bottom: 40px;
+  }
+
+  .dice-popup-button {
+    width: 120px;
+    height: 120px;
+  }
+
+  .dice-popup-icon {
+    width: 60px;
+    height: 60px;
+  }
+
+  .ring-1 {
+    width: 140px;
+    height: 140px;
+  }
+  .ring-2 {
+    width: 180px;
+    height: 180px;
+  }
+  .ring-3 {
+    width: 220px;
+    height: 220px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dice-popup-overlay {
+    bottom: 30px;
+  }
+
+  .dice-popup-button {
+    width: 100px;
+    height: 100px;
+  }
+
+  .dice-popup-icon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .dice-popup-info {
+    padding: 12px 20px;
+  }
+
+  .dice-popup-text {
+    font-size: 14px;
+  }
+
+  .dice-popup-player {
+    font-size: 12px;
+  }
+}
