@@ -62,9 +62,12 @@ body {
 .top-nav {
   position: absolute;
   top: 0;
+  left: 0;
   right: 0;
   padding: 20px 40px;
   display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 20px;
   z-index: 10;
 }
