@@ -1,13 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  UsersIcon,
-  ComputerIcon,
-  LogInIcon,
-  MinusIcon,
-  PlusIcon,
-  ArrowLeftIcon,
-} from "lucide-react";
+import { MinusIcon, PlusIcon, ArrowLeftIcon } from "lucide-react";
+import lobbyPng from "../assets/icons/lobby.png";
+import computerPng from "../assets/icons/computer.png";
+import friendsPng from "../assets/icons/friends.png";
 import { JoinLobby } from "../components/JoinLobby";
 import { createLobby, joinLobby } from "../services/lobbyService";
 import "./Lobby.css";
@@ -248,7 +244,7 @@ export function Lobby() {
           <button onClick={handlePlayWithComputer} className="mode-card">
             <div className="mode-card-content">
               <div className="mode-icon mode-icon-blue">
-                <ComputerIcon className="icon" />
+                <img src={computerPng} alt="computer" className="mode-image" />
               </div>
               <h3 className="mode-title">Play with Computer</h3>
               <p className="mode-description">
@@ -260,7 +256,7 @@ export function Lobby() {
           <button onClick={handleCreateLobby} className="mode-card">
             <div className="mode-card-content">
               <div className="mode-icon mode-icon-green">
-                <UsersIcon className="icon" />
+                <img src={friendsPng} alt="friends" className="mode-image" />
               </div>
               <h3 className="mode-title">Play with Friends</h3>
               <p className="mode-description">
@@ -272,7 +268,7 @@ export function Lobby() {
           <button onClick={() => setMode("joinLobby")} className="mode-card">
             <div className="mode-card-content">
               <div className="mode-icon mode-icon-purple">
-                <LogInIcon className="icon" />
+                <img src={lobbyPng} alt="lobby" className="mode-image" />
               </div>
               <h3 className="mode-title">Join Lobby</h3>
               <p className="mode-description">

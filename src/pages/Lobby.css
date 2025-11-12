@@ -77,6 +77,14 @@
   height: 2rem;
   color: white;
 }
+
+/* PNG mode images */
+.mode-image {
+  width: 5rem;
+  height: 5rem;
+  object-fit: contain;
+  display: block;
+}
 .mode-title {
   font-size: 1.5rem;
   font-weight: bold;
