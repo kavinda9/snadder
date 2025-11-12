@@ -1,3 +1,6 @@
+/* @import url('https://fonts.googleapis.com/css2?family=Arbutas&family=Chewy&display=swap'); */
+
+/* Load fonts for Lobby page: Arbutas for the main title, Chewy for mode titles */
 .lobby-container {
   width: 100%;
   min-height: 100vh;
@@ -16,9 +19,10 @@
   margin-bottom: 3rem;
 }
 .lobby-title {
-  font-size: 3rem;
+  font-size: 4rem;
   font-weight: bold;
   color: white;
+  font-family: "Arbutas", sans-serif;
   margin-bottom: 1rem;
 }
 .lobby-subtitle {
@@ -86,9 +90,10 @@
   display: block;
 }
 .mode-title {
-  font-size: 1.5rem;
+  font-size: 2rem;
   font-weight: bold;
   color: white;
+  font-family: "Chewy", cursive;
 }
 .mode-description {
   color: rgba(255, 255, 255, 0.7);
