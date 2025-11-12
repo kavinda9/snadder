@@ -468,7 +468,7 @@
 /* Audio Control Button */
 .audio-control-btn {
   position: absolute;
-  right: 0;
+  right: 80px;
   top: 50%;
   transform: translateY(-50%);
   width: 50px;

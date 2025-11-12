@@ -91,6 +91,27 @@ const Game = () => {
   const currentPlayer = players[currentPlayerIndex];
   const isMyTurn = currentPlayer?.id === currentUserId;
 
+  // Auto-show popup when it's player's turn
+  useEffect(() => {
+    if (
+      gameMode === "bot" &&
+      !currentPlayer?.isBot &&
+      !isRolling &&
+      gameStatus === "playing"
+    ) {
+      setShowDicePopup(true);
+    } else if (
+      gameMode === "multiplayer" &&
+      isMyTurn &&
+      !isRolling &&
+      gameStatus === "playing"
+    ) {
+      setShowDicePopup(true);
+    } else {
+      setShowDicePopup(false);
+    }
+  }, [currentPlayer, isMyTurn, isRolling, gameStatus, gameMode]);
+
   // ✅ Debug: Log turn information
   useEffect(() => {
     if (gameMode === "multiplayer" && currentPlayer) {
@@ -883,7 +904,8 @@ const Game = () => {
             </div>
           </div>
 
-          {gameMode === "bot" && !currentPlayer?.isBot && (
+          {/* Render legacy Dice component only when popup is NOT active */}
+          {!showDicePopup && gameMode === "bot" && !currentPlayer?.isBot && (
             <Dice
               onRoll={handleDiceRoll}
               disabled={isRolling || gameStatus === "won" || isAnimating}
@@ -891,20 +913,7 @@ const Game = () => {
             />
           )}
 
-          {/* Button to open the Dice Popup (enhanced roll UI) */}
-          {(gameMode === "bot" && !currentPlayer?.isBot) ||
-          (gameMode === "multiplayer" && isMyTurn) ? (
-            <button
-              className="open-dice-popup-btn"
-              onClick={() => setShowDicePopup(true)}
-              disabled={isRolling || gameStatus === "won" || isAnimating}
-              style={{ marginTop: "10px" }}
-            >
-              Open Dice Popup
-            </button>
-          ) : null}
-
-          {gameMode === "multiplayer" && isMyTurn && (
+          {!showDicePopup && gameMode === "multiplayer" && isMyTurn && (
             <Dice
               onRoll={handleDiceRoll}
               disabled={isRolling || gameStatus === "won" || isAnimating}
