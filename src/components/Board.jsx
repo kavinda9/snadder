@@ -261,9 +261,9 @@ const Board = ({ players, currentPlayer, boardImage }) => {
         </Suspense>
 
         <OrbitControls
-          enablePan={true}
+          enablePan={false}
           enableZoom={true}
-          enableRotate={true}
+          enableRotate={false}
           target={[0, 0, 0]}
           minPolarAngle={0}
           maxPolarAngle={Math.PI / 2}
@@ -291,9 +291,8 @@ const Board = ({ players, currentPlayer, boardImage }) => {
         >
           🐍 3D Board Controls
         </div>
-        <div>🖱️ Rotate: Left Click + Drag</div>
         <div>🔍 Zoom: Mouse Wheel</div>
-        <div>✋ Pan: Right Click + Drag</div>
+        <div>✋ Pan: Right Click + Drag (disabled on desktop)</div>
       </div>
     </div>
   );

@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Board from "../components/Board";
-import Dice from "../components/Dice";
 import DicePopup from "../components/DicePopup";
 import { supabase } from "../services/supabaseClient";
 import {
@@ -535,8 +534,6 @@ const Game = () => {
     }
 
     console.log("🎲 Rolling dice:", value);
-    // If roll was triggered from the popup, close it immediately
-    setShowDicePopup(false);
     setDiceValue(value);
     setIsRolling(true);
 
@@ -904,22 +901,44 @@ const Game = () => {
             </div>
           </div>
 
-          {/* Render legacy Dice component only when popup is NOT active */}
-          {!showDicePopup && gameMode === "bot" && !currentPlayer?.isBot && (
-            <Dice
-              onRoll={handleDiceRoll}
-              disabled={isRolling || gameStatus === "won" || isAnimating}
-              currentValue={diceValue}
-            />
-          )}
-
-          {!showDicePopup && gameMode === "multiplayer" && isMyTurn && (
-            <Dice
-              onRoll={handleDiceRoll}
-              disabled={isRolling || gameStatus === "won" || isAnimating}
-              currentValue={diceValue}
-            />
-          )}
+          {/* Simple Dice button (opens purple popup) */}
+          {!showDicePopup &&
+            ((gameMode === "bot" && !currentPlayer?.isBot) ||
+              (gameMode === "multiplayer" && isMyTurn)) && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
+                <button
+                  onClick={() => setShowDicePopup(true)}
+                  disabled={isRolling || gameStatus === "won" || isAnimating}
+                  style={{
+                    width: 120,
+                    height: 120,
+                    borderRadius: "50%",
+                    border: "none",
+                    background:
+                      "linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)",
+                    fontSize: "3rem",
+                    cursor: isRolling ? "not-allowed" : "pointer",
+                    boxShadow: "0 10px 30px rgba(255, 215, 0, 0.5)",
+                  }}
+                  onMouseEnter={(e) =>
+                    !isRolling && (e.target.style.transform = "scale(1.05)")
+                  }
+                  onMouseLeave={(e) => (e.target.style.transform = "scale(1)")}
+                >
+                  🎲
+                </button>
+                <div style={{ fontSize: 14, color: "#666" }}>
+                  {isRolling ? "Rolling..." : "Click to roll"}
+                </div>
+              </div>
+            )}
 
           {/* Dice Popup overlay */}
           <DicePopup
@@ -927,6 +946,7 @@ const Game = () => {
             currentPlayer={currentPlayer}
             disabled={isRolling || gameStatus === "won" || isAnimating}
             show={showDicePopup}
+            setShow={setShowDicePopup}
           />
 
           {gameMode === "multiplayer" &&
