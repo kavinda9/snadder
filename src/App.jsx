@@ -27,10 +27,12 @@ function Home() {
   useEffect(() => {
     // Check for authenticated user
     const checkUser = async () => {
+      console.log("[DEBUG] Home: starting checkUser");
       try {
         const {
           data: { session },
         } = await supabase.auth.getSession();
+        console.log("[DEBUG] Home: supabase.auth.getSession returned", session);
         if (session) {
           setCurrentUser(session.user);
           const username =
@@ -43,6 +45,9 @@ function Home() {
       } catch (error) {
         console.error("Error checking user:", error);
       } finally {
+        console.log(
+          "[DEBUG] Home: finishing checkUser -> setting isLoading=false"
+        );
         setIsLoading(false);
       }
     };
@@ -282,13 +287,16 @@ function App() {
   useEffect(() => {
     // Check for existing session on app load
     const checkSession = async () => {
+      console.log("[DEBUG] App: starting checkSession");
       try {
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
+        console.log("[DEBUG] App: supabase.auth.getSession returned", session);
+
         if (session) {
-          console.log("✅ Found existing session:", session.user.email);
+          console.log("✅ Found existing session:", session.user?.email);
           // Restore user info from session if available
           const username =
             session.user.user_metadata?.username ||
@@ -303,6 +311,9 @@ function App() {
       } catch (error) {
         console.error("Error checking session:", error);
       } finally {
+        console.log(
+          "[DEBUG] App: finishing checkSession -> setting isAuthReady=true"
+        );
         setIsAuthReady(true);
       }
     };
