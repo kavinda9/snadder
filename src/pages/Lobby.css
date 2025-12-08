@@ -4,7 +4,7 @@
 .lobby-container {
   width: 100%;
   min-height: 100vh;
-  background: linear-gradient(to bottom right, #581c87, #1e3a8a, #312e81);
+  background: linear-gradient(135deg, #2c3e50 0%, #1a2533 50%, #0f1c27 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -40,17 +40,20 @@
   }
 }
 .mode-card {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(16px);
   border-radius: 1rem;
   padding: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 .mode-card:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.05);
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.05) translateY(-5px);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
 }
 .mode-card-content {
   display: flex;
@@ -68,13 +71,16 @@
   justify-content: center;
 }
 .mode-icon-blue {
-  background: rgba(59, 130, 246, 0.3);
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
 }
 .mode-icon-green {
-  background: rgba(34, 197, 94, 0.3);
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  box-shadow: 0 4px 15px rgba(67, 233, 123, 0.4);
 }
 .mode-icon-purple {
-  background: rgba(168, 85, 247, 0.3);
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  box-shadow: 0 4px 15px rgba(250, 112, 154, 0.4);
 }
 .icon {
   width: 2rem;
@@ -99,13 +105,15 @@
   color: rgba(255, 255, 255, 0.7);
 }
 .computer-mode-card {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(16px);
   border-radius: 1rem;
   padding: 2rem;
   max-width: 28rem;
   width: 100%;
   text-align: center;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 .computer-mode-title {
   font-size: 1.875rem;
@@ -122,30 +130,34 @@
   background: rgba(255, 255, 255, 0.2);
   color: white;
   border-radius: 0.5rem;
-  transition: background 0.3s ease;
-  border: none;
+  transition: all 0.3s ease;
+  border: 2px solid rgba(255, 255, 255, 0.3);
   cursor: pointer;
 }
 .back-button:hover {
   background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
 }
 /* LobbyCreated styles */
 .lobby-created-container {
   width: 100%;
   min-height: 100vh;
-  background: linear-gradient(to bottom right, #581c87, #1e3a8a, #312e81);
+  background: linear-gradient(135deg, #2c3e50 0%, #1a2533 50%, #0f1c27 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1rem;
 }
 .lobby-created-card {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(16px);
   border-radius: 1rem;
   padding: 2rem;
   max-width: 42rem;
   width: 100%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 .lobby-created-header {
   text-align: center;
@@ -284,45 +296,51 @@
   background: rgba(255, 255, 255, 0.2);
   color: white;
   border-radius: 0.5rem;
-  transition: background 0.3s ease;
+  transition: all 0.3s ease;
   font-weight: 500;
-  border: none;
+  border: 2px solid rgba(255, 255, 255, 0.3);
   cursor: pointer;
 }
 .cancel-button:hover {
   background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
 }
 .start-button {
   flex: 1;
   padding: 0.75rem 1.5rem;
-  background: #22c55e;
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
   color: white;
   border-radius: 0.5rem;
-  transition: background 0.3s ease;
+  transition: all 0.3s ease;
   font-weight: 500;
   border: none;
   cursor: pointer;
+  box-shadow: 0 4px 15px rgba(67, 233, 123, 0.4);
 }
 .start-button:hover {
-  background: #16a34a;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(67, 233, 123, 0.6);
 }
 /* JoinLobby styles */
 .join-lobby-container {
   width: 100%;
   min-height: 100vh;
-  background: linear-gradient(to bottom right, #581c87, #1e3a8a, #312e81);
+  background: linear-gradient(135deg, #2c3e50 0%, #1a2533 50%, #0f1c27 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1rem;
 }
 .join-lobby-card {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(16px);
   border-radius: 1rem;
   padding: 2rem;
   max-width: 28rem;
   width: 100%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 .back-link {
   display: flex;
@@ -390,17 +408,19 @@
 .join-button {
   width: 100%;
   padding: 1rem 1.5rem;
-  background: #22c55e;
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
   color: white;
   border-radius: 0.75rem;
-  transition: background 0.3s ease;
+  transition: all 0.3s ease;
   font-weight: bold;
   font-size: 1.125rem;
   border: none;
   cursor: pointer;
+  box-shadow: 0 4px 15px rgba(67, 233, 123, 0.4);
 }
 .join-button:hover:not(:disabled) {
-  background: #16a34a;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(67, 233, 123, 0.6);
 }
 .join-button:disabled {
   background: rgba(255, 255, 255, 0.2);
@@ -491,19 +511,24 @@
 .bot-actions .back-button {
   background: rgba(255, 255, 255, 0.2);
   color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .bot-actions .back-button:hover {
   background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
 }
 
 .bot-actions .start-button {
-  background: #22c55e;
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
   color: white;
+  box-shadow: 0 4px 15px rgba(67, 233, 123, 0.4);
 }
 
 .bot-actions .start-button:hover {
-  background: #16a34a;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(67, 233, 123, 0.6);
 }
 
 /* Add this to your existing Lobby.css */
