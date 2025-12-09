@@ -904,23 +904,6 @@ const Game = () => {
             </div>
           </div>
 
-          {/* Render legacy Dice component only when popup is NOT active */}
-          {!showDicePopup && gameMode === "bot" && !currentPlayer?.isBot && (
-            <Dice
-              onRoll={handleDiceRoll}
-              disabled={isRolling || gameStatus === "won" || isAnimating}
-              currentValue={diceValue}
-            />
-          )}
-
-          {!showDicePopup && gameMode === "multiplayer" && isMyTurn && (
-            <Dice
-              onRoll={handleDiceRoll}
-              disabled={isRolling || gameStatus === "won" || isAnimating}
-              currentValue={diceValue}
-            />
-          )}
-
           {/* Dice Popup overlay */}
           <DicePopup
             onRoll={handleDiceRoll}

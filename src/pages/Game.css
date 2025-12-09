@@ -1,7 +1,7 @@
 /* Game Page */
 .game-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
   padding: 20px;
 }
 
@@ -1042,4 +1042,97 @@
 
 .disconnect-toast p {
   margin: 0;
+}
+
+/* === DICE POPUP INTEGRATION === */
+/* Remove the "open popup" button since popup shows automatically */
+.open-dice-popup-btn {
+  display: none; /* Hide the manual button since popup auto-shows */
+}
+
+/* Make sure waiting turn message is visible */
+.waiting-turn {
+  text-align: center;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 15px;
+  margin: 1rem 0;
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.waiting-turn p {
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Toast notification styling enhancement */
+.disconnect-toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #ff4d4d 0%, #f93d3d 100%);
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(255, 77, 77, 0.5);
+  font-size: 1.1rem;
+  font-weight: 600;
+  z-index: 10000;
+  animation: toastSlideUp 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+@keyframes toastSlideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.disconnect-toast p {
+  margin: 0;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive for popup on mobile */
+@media (max-width: 768px) {
+  .waiting-turn {
+    padding: 1rem;
+  }
+
+  .waiting-turn p {
+    font-size: 0.95rem;
+  }
+
+  .disconnect-toast {
+    bottom: 1.5rem;
+    padding: 0.85rem 1.5rem;
+    font-size: 1rem;
+    max-width: 90%;
+  }
+}
+
+@media (max-width: 480px) {
+  .waiting-turn {
+    padding: 0.85rem;
+    margin: 0.75rem 0;
+  }
+
+  .waiting-turn p {
+    font-size: 0.9rem;
+  }
+
+  .disconnect-toast {
+    bottom: 1rem;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9rem;
+  }
 }
