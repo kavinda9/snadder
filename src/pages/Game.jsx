@@ -777,7 +777,7 @@ const Game = () => {
         <button onClick={handleBack} className="back-home-btn">
           ← Back to Lobby
         </button>
-        <h1>🐍 Snake & Ladder 🪜</h1>
+        <h1>Snadder</h1>
 
         <button
           className="audio-control-btn"
@@ -879,57 +879,12 @@ const Game = () => {
         </div>
 
         <div className="controls-section">
-          <div className="game-mode-info">
-            <span className="mode-badge">
-              {gameMode === "bot"
-                ? `🤖 Bot Game (${botCount} bot${botCount > 1 ? "s" : ""})`
-                : `👥 Multiplayer ${isMyTurn ? "(Your Turn!)" : ""}`}
-            </span>
-          </div>
-
-          <div className="current-player">
-            <h3>Current Turn</h3>
-            <div className="player-info">
-              <div className="player-avatar-with-icon">
-                <img
-                  src={currentPlayer?.icon}
-                  alt={currentPlayer?.name}
-                  className="player-icon"
-                />
-              </div>
-              <span className="player-name">{currentPlayer?.name}</span>
-              {currentPlayer?.isBot && (
-                <span className="bot-indicator">🤖</span>
-              )}
-            </div>
-          </div>
-
-          {/* Dice Popup overlay */}
           <DicePopup
             onRoll={handleDiceRoll}
             currentPlayer={currentPlayer}
             disabled={isRolling || gameStatus === "won" || isAnimating}
             show={showDicePopup}
           />
-
-          {gameMode === "multiplayer" &&
-            !isMyTurn &&
-            gameStatus === "playing" && (
-              <div className="waiting-turn">
-                <p>⏳ Waiting for {currentPlayer?.name}'s turn...</p>
-              </div>
-            )}
-
-          {currentPlayer?.isBot && isRolling && (
-            <div className="bot-thinking">
-              <div className="thinking-dots">
-                <span>●</span>
-                <span>●</span>
-                <span>●</span>
-              </div>
-              <p>Bot is thinking...</p>
-            </div>
-          )}
 
           <div className="leaderboard">
             <h3>Leaderboard</h3>
@@ -957,13 +912,15 @@ const Game = () => {
                   />
                 </div>
                 <div className="leaderboard-info">
-                  <span className="leaderboard-name">
-                    {player.name} {player.isBot && "🤖"}
-                    {player.id === currentUserId && " (You)"}
-                  </span>
-                  <span className="leaderboard-position">
-                    Square {player.position}
-                  </span>
+                  <div className="leaderboard-name-row">
+                    <span className="leaderboard-name">
+                      {player.name}
+                      {player.id === currentUserId && " (You)"}
+                    </span>
+                    <span className="leaderboard-points">
+                      {player.position}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
