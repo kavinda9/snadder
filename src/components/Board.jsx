@@ -248,7 +248,7 @@ const Board = ({ players, currentPlayer, boardImage }) => {
   return (
     <div style={{ width: "100%", height: "600px", position: "relative" }}>
       <Canvas
-        camera={{ position: [0, 12, 12], fov: 50 }}
+        camera={{ position: [0, 7.5, 7.5], fov: 50 }}
         shadows
         gl={{ antialias: true }}
       >
@@ -267,8 +267,8 @@ const Board = ({ players, currentPlayer, boardImage }) => {
           target={[0, 0, 0]}
           minPolarAngle={0}
           maxPolarAngle={Math.PI / 2}
-          minDistance={8}
-          maxDistance={20}
+          minDistance={4.5}
+          maxDistance={12}
         />
       </Canvas>
 
